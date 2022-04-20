@@ -1,7 +1,10 @@
 ManifestFileVersion: 0
-CRC: 1463798320
+CRC: 1721061061
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
       Name: genericboardscene
+      Dependencies: {}
+    Info_1:
+      Name: chessassets
       Dependencies: {}

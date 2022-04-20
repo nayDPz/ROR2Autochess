@@ -1,6 +1,7 @@
 ﻿using RoR2.ContentManagement;
 using System.Collections.Generic;
 using RoR2;
+using UnityEngine;
 namespace RORAutochess
 {
     internal class ContentPacks : IContentPackProvider
@@ -9,6 +10,7 @@ namespace RORAutochess
         public string identifier => AutochessPlugin.PluginGUID;
 
         internal static List<SceneDef> sceneDefs = new List<SceneDef>();
+        internal static List<GameObject> gameModePrefabs = new List<GameObject>();
         public void Initialize()
         {
             ContentManager.collectContentPackProviders += ContentManager_collectContentPackProviders;
@@ -23,7 +25,7 @@ namespace RORAutochess
         {
             this.contentPack.identifier = this.identifier;
             contentPack.sceneDefs.Add(sceneDefs.ToArray());
-
+            contentPack.gameModePrefabs.Add(gameModePrefabs.ToArray());
             args.ReportProgress(1f);
             yield break;
         }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace AutochessPlugin.Units
+namespace RORAutochess.Units
 {
     class Lemurian
     {
