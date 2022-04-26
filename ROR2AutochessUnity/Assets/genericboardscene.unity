@@ -243,13 +243,18 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 53.605003, y: -16.347, z: 12.911}
---- !u!1001 &8415645165485562508
+--- !u!1001 &1224745429771969678
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3949686799599135285, guid: 41591946a1696314c894d1701292b832,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5645199596706846820, guid: 41591946a1696314c894d1701292b832,
         type: 3}
       propertyPath: m_RootOrder
@@ -305,10 +310,20 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7401548211279019075, guid: 41591946a1696314c894d1701292b832,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8211631611214402368, guid: 41591946a1696314c894d1701292b832,
         type: 3}
       propertyPath: m_Name
       value: Grid
+      objectReference: {fileID: 0}
+    - target: {fileID: 8211631611214402368, guid: 41591946a1696314c894d1701292b832,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 41591946a1696314c894d1701292b832, type: 3}

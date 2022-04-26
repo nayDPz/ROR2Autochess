@@ -9,6 +9,7 @@ namespace RORAutochess
         internal ContentPack contentPack = new ContentPack();
         public string identifier => AutochessPlugin.PluginGUID;
 
+        internal static List<GameObject> bodyPrefabs = new List<GameObject>();
         internal static List<SceneDef> sceneDefs = new List<SceneDef>();
         internal static List<GameObject> gameModePrefabs = new List<GameObject>();
         public void Initialize()
@@ -26,6 +27,7 @@ namespace RORAutochess
             this.contentPack.identifier = this.identifier;
             contentPack.sceneDefs.Add(sceneDefs.ToArray());
             contentPack.gameModePrefabs.Add(gameModePrefabs.ToArray());
+            contentPack.bodyPrefabs.Add(bodyPrefabs.ToArray());
             args.ReportProgress(1f);
             yield break;
         }

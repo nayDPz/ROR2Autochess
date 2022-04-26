@@ -13,6 +13,7 @@ namespace RORAutochess
     public class AutochessRun : Run
     {
         public static GameObject gamemodePrefab;
+        public static GameObject ui;
         public static void CreatePrefab()
         {
 
@@ -33,12 +34,10 @@ namespace RORAutochess
             r.nameToken = "GAMEMODE_CHESS_RUN_NAME";
             r.lobbyBackgroundPrefab = cr.lobbyBackgroundPrefab;
             r.gameOverPrefab = cr.gameOverPrefab;
-            GameObject ui = R2API.PrefabAPI.InstantiateClone(cr.uiPrefab, "AutochessUI");
+
+            ui = AutochessPlugin.hud.LoadAsset<GameObject>("HUDAutochess");
             ui.AddComponent<CursorOpener>();
-
-            GameObject.Destroy(ui.GetComponent<CrosshairManager>());
-
-            r.uiPrefab = ui;
+            r.uiPrefab = null;
 
             gamemodePrefab.AddComponent<TeamManager>();
             gamemodePrefab.AddComponent<RunCameraManager>();

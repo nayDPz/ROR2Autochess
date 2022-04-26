@@ -9,6 +9,7 @@ using RORAutochess.AI;
 
 namespace RORAutochess.Units
 {
+    [RequireComponent(typeof(Highlight), typeof(EntityLocator))]
     class UnitPickupInteraction : MonoBehaviour, IInteractable // SHOULD PROBABLY MAKE THIS A HEX INTERACTION INSTEAD OF UNIT
     {
         private bool pickedUp;
@@ -17,11 +18,25 @@ namespace RORAutochess.Units
 
         private CharacterMaster master;
         private CharacterBody body;
+        private Renderer mainRenderer;
+        private MinionOwnership.MinionGroup minionGroup;
+        private InteractionDriver driver;
         private void Awake()
         {
             this.body = base.GetComponent<CharacterBody>();
-            this.master = body.GetComponent<CharacterMaster>();
+            this.body.GetComponent<EntityLocator>().entity = base.gameObject;
         }
+
+        private void Start()
+        {
+            if(this.body.modelLocator && this.body.modelLocator.modelTransform)
+            {
+                this.mainRenderer = this.body.modelLocator.modelTransform.gameObject.GetComponent<CharacterModel>().mainSkinnedMeshRenderer;
+            }
+            base.GetComponent<Highlight>().targetRenderer = this.mainRenderer;
+            this.master = this.body.master;
+        }
+
         public string GetContextString([NotNull] Interactor activator)
         {
             return !pickedUp ? "Pick up Unit" : "Put down Unit";
@@ -29,6 +44,10 @@ namespace RORAutochess.Units
 
         public Interactability GetInteractability([NotNull] Interactor activator)
         {
+            if(this.minionGroup == null) this.minionGroup = MinionOwnership.MinionGroup.FindGroup(activator.gameObject.GetComponent<CharacterBody>().master.netId);
+            if(this.minionGroup == null) return Interactability.Disabled;
+            if (this.master.minionOwnership.group != this.minionGroup) return Interactability.Disabled;
+
             return this.cooldown <= 0 ? Interactability.Available : Interactability.Disabled;
         }
 
@@ -37,9 +56,9 @@ namespace RORAutochess.Units
             if (!this.master)
                 this.master = this.body.master;
 
-            this.cooldown = 0.5f;
+            this.cooldown = 0.05f;
 
-            InteractionDriver driver = activator.GetComponent<InteractionDriver>();
+            driver = activator.GetComponent<InteractionDriver>();
             if(driver)
             {
                 if (!pickedUp)
@@ -57,25 +76,34 @@ namespace RORAutochess.Units
                 {
                     pickedUp = false;
                     driver.interactableOverride = null;
-                    if (GenericBoard.onBoard)
-                    {
-                        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
-                        Physics.Raycast(ray, out RaycastHit hit, 1000f);
-                        Vector3 vector = hit.point;
-                        
-                        GenericBoard.Tile tile = GenericBoard.GetClosestTile(vector);
-                        TileNavigator t = TileNavigator.FindTileNavigatorByMaster(this.master);
-                        this.body.characterMotor.AddDisplacement(tile.worldPosition - base.transform.position);
-                        this.body.characterMotor.velocity = Vector3.zero;
-                        t.PlaceOnTile(tile);
-                        Log.LogInfo(tile.index);
-                    }
+                    this.PlaceUnit();
 
                 }
             }
             else
             {
                 Log.LogError("InteractionDriver missing, can't pick up Unit");
+            }
+        }
+
+        private void PlaceUnit()
+        {
+            pickedUp = false;
+            if (this.driver.interactableOverride) this.driver.interactableOverride = null;
+
+            if (GenericBoard.onBoard)
+            {
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
+                Physics.Raycast(ray, out RaycastHit hit, 1000f);
+                Vector3 vector = hit.point;
+                TileNavigator t = TileNavigator.FindTileNavigatorByMaster(this.master);
+
+                GenericBoard.Tile tile = t.currentBoard.GetClosestTile(vector);
+
+                this.body.characterMotor.AddDisplacement(tile.worldPosition - base.transform.position);
+                this.body.characterMotor.velocity = Vector3.zero;
+                t.PlaceOnTile(tile);
+                //Log.LogInfo(tile.index);
             }
         }
 
@@ -89,7 +117,11 @@ namespace RORAutochess.Units
                 Vector3 vector = hit.point;
                 vector.y += 5f;
                 this.body.characterMotor.AddDisplacement(vector - base.transform.position);
-                Log.LogInfo(vector);
+
+                if(Input.GetMouseButtonUp(0))
+                {
+                    this.PlaceUnit();
+                }
             }
         }      
 

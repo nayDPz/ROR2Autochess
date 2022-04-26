@@ -8,16 +8,21 @@ using UnityEngine.SceneManagement;
 
 namespace RORAutochess
 {
-    public class GenericBoard
+    public class GenericBoard : MonoBehaviour
     {
         public const float baseWidth = 1.732f;
         public const float baseHeight = 2.0f;
 
+        public static List<GenericBoard> instancesList;
+        public static GameObject gridPrefab;
         private static float scale;
         private static float gap;
+        private static int boardWidth;
+        private static int boardHeight;
 
         public static SceneDef sceneDef;
-        public static Tile[] tiles;
+        public GameObject gridInstance;
+        public Tile[] tiles;
 
 
         public static bool onBoard;
@@ -32,12 +37,12 @@ namespace RORAutochess
 
             GenericBoard.scale = scale;
             GenericBoard.gap = gap;
-            tiles = GenerateTiles(x, y, gap, scale);
+            boardWidth = x;
+            boardHeight = y;
 
-            for(int i = 0; i < tiles.Length; i++)
-            {
-                tiles[i].LinkTile();
-            }
+            gridPrefab = AutochessPlugin.hud.LoadAsset<GameObject>("Grid");
+
+            instancesList = new List<GenericBoard>();
 
             ContentPacks.sceneDefs.Add(sceneDef);
 
@@ -45,42 +50,89 @@ namespace RORAutochess
             RoR2.Stage.onStageStartGlobal += SetupPlayers;
         }
 
+        public GenericBoard(Vector3 startPos, int width, int height)
+        {
+            gridInstance = GameObject.Instantiate<GameObject>(GenericBoard.gridPrefab, startPos, Quaternion.identity);
+            Board.GridGeneration g = gridInstance.transform.Find("Hexagons").gameObject.GetComponent<Board.GridGeneration>();
+            g.gridWidth = width;
+            g.gridHeight = height;
+            g.gap = gap;
+            g.scale = GenericBoard.scale;
+            tiles = GenerateTiles(boardWidth, boardHeight, gap, scale, startPos); // should probably combine tile generation and grid generation
+            
+
+            for (int i = 0; i < tiles.Length; i++)
+            {
+                tiles[i].LinkTile();
+            }
+
+            GenericBoard.instancesList.Add(this);
+        }
+
+        private void OnDestroy()
+        {
+            GenericBoard.instancesList.Remove(this);
+        }
+
         private static void SetupPlayers(Stage stage)
         {
             if(stage.sceneDef == GenericBoard.sceneDef)
             {
-                GameObject camera = GameObject.Find("CameraHolder");
-
-                for (int i = 0; i < CameraRigController.readOnlyInstancesList.Count; i++)
+                List<LocalUser> players = LocalUserManager.localUsersList;
+                Vector3 startPos = Vector3.zero;
+                foreach(LocalUser l in players)
                 {
-                    Transform t = CameraRigController.readOnlyInstancesList[i].gameObject.transform.Find("Scene Camera");
-                    if (t)
-                    {
-                        t.parent = camera.transform;
-                        t.localPosition = Vector3.zero;
-                        t.rotation = Quaternion.LookRotation(Vector3.zero);
-                    }
-
-                    CameraRigController.readOnlyInstancesList[i].enableFading = false;
+                    GenericBoard board = new GenericBoard(startPos, GenericBoard.boardWidth, GenericBoard.boardHeight);
+                    CharacterMaster player = l.cachedMaster;
+                    player.gameObject.AddComponent<Traits.UnitOwnership>();
+                    //player.bodyPrefab = Player.PlayerBodyObject.bodyPrefab;
+                    startPos.x += 300f;
                 }
+                
             }
         }
 
+        [SystemInitializer(typeof(GameModeCatalog))]
+        private static void SetupTestUnits()
+        {
+            foreach (CharacterMaster master in MasterCatalog.allMasters)
+            {
+
+                Units.UnitData unitData = master.gameObject.AddComponent<Units.UnitData>();
+                GameObject bodyObject = master.bodyPrefab;
+                CharacterBody body = bodyObject.GetComponent<CharacterBody>();
+
+                unitData.master = master;
+                unitData.bodyObject = master.bodyPrefab;
+                unitData.unitName = body.baseNameToken;
+                Debug.Log(unitData.bodyObject.name);
+                
+
+                if(master.GetComponent<RoR2.CharacterAI.BaseAI>())
+                    master.GetComponent<RoR2.CharacterAI.BaseAI>().fullVision = true;
+
+                if (master.GetComponent<EntityStateMachine>())
+                {
+                    master.GetComponent<EntityStateMachine>().initialStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
+                    master.GetComponent<EntityStateMachine>().mainStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
+                }
+
+
+                if (bodyObject && !bodyObject.GetComponent<Units.UnitPickupInteraction>())
+                {
+                    bodyObject.AddComponent<Units.UnitPickupInteraction>();
+                    body.baseAcceleration = 999;
+                    body.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
+                }
+            }
+        }
         private static void SetupBoard(Scene scene, LoadSceneMode arg1)
         {
             if (scene.name == "genericboardscene")
             {
                 onBoard = true;
                 GameObject camera = GameObject.Find("CameraHolder");
-
-
-
                 camera.transform.position *= GenericBoard.scale * 2;
-                GameObject stage = GameObject.Find("Grid");
-                stage.transform.localScale *= GenericBoard.scale * 2; // i fucked something up with scale idk
-                GameObject floor = stage.transform.Find("Floor").gameObject;
-                floor.layer = LayerIndex.world.intVal;
-                floor.AddComponent<SurfaceDefProvider>().surfaceDef = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<SurfaceDef>("RoR2/Base/Common/sdStone.asset").WaitForCompletion();
 
                 GameObject si = new GameObject("SceneInfo");
                 SceneInfo info = si.AddComponent<SceneInfo>();
@@ -92,18 +144,27 @@ namespace RORAutochess
                 GlobalEventManager manager = ev.AddComponent<GlobalEventManager>();
                 SceneManager.MoveGameObjectToScene(ev, scene);
 
-                GameObject lemtest = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Lemurian/LemurianMaster.prefab").WaitForCompletion();
-                lemtest.GetComponent<EntityStateMachine>().initialStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
-                lemtest.GetComponent<EntityStateMachine>().mainStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
-                GameObject body = lemtest.GetComponent<CharacterMaster>().bodyPrefab;
-                if(!body.GetComponent<Units.UnitPickupInteraction>())
-                {
-                    body.AddComponent<Units.UnitPickupInteraction>();
-                    body.AddComponent<Highlight>().targetRenderer = body.GetComponent<ModelLocator>().modelTransform.gameObject.GetComponent<CharacterModel>().mainSkinnedMeshRenderer;
-                    body.AddComponent<EntityLocator>().entity = body;
-                    body.GetComponent<CharacterBody>().baseAcceleration = 999;
-                }
-                    
+                //GameObject stage = GameObject.Find("Grid(Clone)");
+                //stage.transform.localScale *= GenericBoard.scale * 2; // i fucked something up with scale idk
+                //GameObject floor = stage.transform.Find("Floor").gameObject;
+                //floor.layer = LayerIndex.world.intVal;
+                //floor.AddComponent<SurfaceDefProvider>().surfaceDef = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<SurfaceDef>("RoR2/Base/Common/sdStone.asset").WaitForCompletion();
+
+
+
+
+
+                
+                //GameObject lemtest = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Lemurian/LemurianMaster.prefab").WaitForCompletion();
+                //lemtest.GetComponent<EntityStateMachine>().initialStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
+                //lemtest.GetComponent<EntityStateMachine>().mainStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
+                //GameObject body = lemtest.GetComponent<CharacterMaster>().bodyPrefab;
+                //if(!body.GetComponent<Units.UnitPickupInteraction>())
+                //{
+                //    body.AddComponent<Units.UnitPickupInteraction>();                 
+                //    body.GetComponent<CharacterBody>().baseAcceleration = 999;
+                //}
+
             }
             else
                 onBoard = false;
@@ -112,8 +173,10 @@ namespace RORAutochess
 
         }
 
-        private static Tile[] GenerateTiles(int x, int y, float gap, float scale)
+        private Tile[] GenerateTiles(int x, int y, float gap, float scale, Vector3 startPos)
         {
+
+
             float width = baseWidth + baseWidth * gap;
             float height = baseHeight + baseHeight * gap;
 
@@ -127,8 +190,9 @@ namespace RORAutochess
                     float offset = i % 2 != 0 ? width / 2f : 0f;
                     tiles[index] = new Tile
                     {
-                        worldPosition = new Vector3((width * k + offset) * scale, 0.1f, (-height * i * 0.75f) * scale),
-                        index = index,                      
+                        worldPosition = new Vector3((width * k + offset) * scale, 0.1f, (-height * i * 0.75f) * scale) + startPos,
+                        index = index,
+                        board = this,
                     };
 
                     List<int> links = new List<int>();
@@ -221,11 +285,11 @@ namespace RORAutochess
             return tiles;
         }
 
-        public static Tile GetClosestTile(Vector3 worldPosition)
+        public Tile GetClosestTile(Vector3 worldPosition)
         {
             Tile tile = tiles[0];
             float lowestDistance = Mathf.Infinity;
-            for (int i = 0; i < GenericBoard.tiles.Length; i++)
+            for (int i = 0; i < tiles.Length; i++)
             {
                 float distance = (tiles[i].worldPosition - worldPosition).magnitude;
                 if (distance < lowestDistance && !tiles[i].occupied)
@@ -237,12 +301,13 @@ namespace RORAutochess
             return tile;
         }
 
-        public static Tile GetTileFromIndex(int index)
+        public Tile GetTileFromIndex(int index)
         {
             return tiles[index];
         }
         public class Tile
         {
+            public GenericBoard board;
             public bool enabled = false;
             public int index;
             public Vector3 worldPosition;
@@ -255,7 +320,7 @@ namespace RORAutochess
                 connectedTiles = new Tile[connectedTileIndices.Length];
                 for(int i = 0; i < connectedTileIndices.Length; i++)
                 {
-                    connectedTiles[i] = GetTileFromIndex(connectedTileIndices[i]);
+                    connectedTiles[i] = board.GetTileFromIndex(connectedTileIndices[i]);
                     //Log.LogDebug("Tile " + index + " connected to Tile " + connectedTiles[i].index);
                 }
             }
@@ -264,7 +329,7 @@ namespace RORAutochess
 
             public Tile GetClosestConnectedTile(int targetTileIndex)
             {
-                return GetClosestConnectedTile(GetTileFromIndex(targetTileIndex));
+                return GetClosestConnectedTile(board.GetTileFromIndex(targetTileIndex));
             }
             public Tile GetClosestConnectedTile(Tile targetTile)
             {

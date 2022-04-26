@@ -14,11 +14,16 @@ namespace RORAutochess.AI
         public static event Action beforeTileUpdate;
         public static event Action afterTileUpdate;
 
+        public static bool inCombat = true; // this shouldnt be here
+
         private CharacterBody owner; // probs should be master
         public Vector3 moveVector;
+        public GenericBoard.Tile previousTile;
         public GenericBoard.Tile currentTile;
         public GenericBoard.Tile nextTile;
         public bool navigationEnabled = true;
+
+        public GenericBoard currentBoard;
 
         static TileNavigator()
         {
@@ -27,8 +32,14 @@ namespace RORAutochess.AI
 
         public TileNavigator(CharacterBody owner)
         {
+            if(!GenericBoard.onBoard)
+            {
+                this.Dispose();
+                return;
+            }
+            this.currentBoard = GenericBoard.instancesList[0]; // FOR TESTING, ASSIGN THIS PROPERLY LATER
             this.owner = owner;
-            currentTile = GenericBoard.GetClosestTile(owner.footPosition);
+            currentTile = currentBoard.GetClosestTile(owner.footPosition);
             TileNavigator.instances.Add(this);
         }
 
@@ -60,8 +71,8 @@ namespace RORAutochess.AI
             if(this.currentTile != null)
                 this.currentTile.occupied = false;
 
-
-            TileNavigator.instances.Remove(this);
+            if(TileNavigator.instances.Contains(this))
+                TileNavigator.instances.Remove(this);
         }
 
         private static void RoR2Application_onFixedUpdate()

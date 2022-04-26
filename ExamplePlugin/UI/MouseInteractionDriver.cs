@@ -21,6 +21,8 @@ namespace RORAutochess.UI
             On.RoR2.InteractionDriver.FindBestInteractableObject += InteractionDriver_FindBestInteractableObject;
         }
 
+        
+
         private GameObject InteractionDriver_FindBestInteractableObject(On.RoR2.InteractionDriver.orig_FindBestInteractableObject orig, InteractionDriver self)
         {
             if(GenericBoard.onBoard)
@@ -31,9 +33,10 @@ namespace RORAutochess.UI
                 }
                 float num = 0f;
                 Ray originalAimRay = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
+                Physics.Raycast(originalAimRay, out RaycastHit hit, 1000f, LayerIndex.world.intVal, QueryTriggerInteraction.Collide);
                 //Ray raycastRay = CameraRigController.ModifyAimRayIfApplicable(originalAimRay, base.gameObject, out num);
-                float num2 = 3;
-                return self.interactor.FindBestInteractableObject(originalAimRay, num2 + num, originalAimRay.origin, num2);
+                float num2 = 5f;
+                return self.interactor.FindBestInteractableObject(originalAimRay, num2 + num, hit.point, num2);
             }
             else
             {

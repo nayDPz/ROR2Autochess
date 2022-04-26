@@ -16,6 +16,7 @@ namespace RORAutochess.AI
         public override void OnEnter()
         {
             base.OnEnter();
+            
             this.navigator = new TileNavigator(base.body);
             TileNavigator.beforeTileUpdate += RequestAI;
             TileNavigator.afterTileUpdate += UpdateAI;
@@ -67,8 +68,9 @@ namespace RORAutochess.AI
             bool pressSkill3 = false;
             bool pressSkill4 = false;
             BaseAI.Target aimTarget = base.ai.skillDriverEvaluation.aimTarget;
-			if (aimTarget != null && this.navigator.navigationEnabled)
+			if (aimTarget != null && this.navigator.navigationEnabled && TileNavigator.inCombat)
 			{
+
 				base.AimAt(ref this.bodyInputs, aimTarget);
                 pressSkill1 = (aimTarget.bestHurtBox.transform.position - base.body.transform.position).magnitude <= range;
 
@@ -76,6 +78,7 @@ namespace RORAutochess.AI
                 this.bodyInputs.moveVector = this.navigator.moveVector.normalized;
             }
 
+            base.body.SetAimTimer(pressSkill1 ? Mathf.Infinity : 0);
             this.bodyInputs.pressSkill1 = pressSkill1;
 
             return base.GenerateBodyInputs(previousBodyInputs);
