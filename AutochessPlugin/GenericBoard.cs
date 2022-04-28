@@ -114,8 +114,8 @@ namespace RORAutochess
 
                 if (master.GetComponent<EntityStateMachine>())
                 {
-                    master.GetComponent<EntityStateMachine>().initialStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.DoNothing));
-                    master.GetComponent<EntityStateMachine>().mainStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.DoNothing));
+                    master.GetComponent<EntityStateMachine>().initialStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
+                    master.GetComponent<EntityStateMachine>().mainStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
                 }
 
 
@@ -458,21 +458,67 @@ namespace RORAutochess
             public Tile GetClosestConnectedTile(Vector3 worldPosition)
             {
                 float lowestDistance = Mathf.Infinity;
-                Tile tile = connectedTiles[0];
-                for (int i = 0; i < connectedTiles.Length; i++)
-                {
-                    float distance = (connectedTiles[i].worldPosition - worldPosition).magnitude;
-                    if (distance < lowestDistance && !connectedTiles[i].occupied)
+                Tile tile = this;
+                if (connectedTiles.Length > 0)
+                {                   
+                    for (int i = 0; i < connectedTiles.Length; i++)
                     {
-                        tile = connectedTiles[i];
-                        lowestDistance = distance;
+                        float distance = (connectedTiles[i].worldPosition - worldPosition).magnitude;
+                        if (distance < lowestDistance && !connectedTiles[i].occupied)
+                        {
+                            tile = connectedTiles[i];
+                            lowestDistance = distance;
+                        }
                     }
-                }
-                if (lowestDistance == Mathf.Infinity)
-                    tile = this;
+                }               
                 return tile;
             }
 
+            public Tile GetTileIgnore(Vector3 worldPosition, Tile ignoredTile) // this feels ugly
+            {
+                float lowestDistance = Mathf.Infinity;
+                Tile tile = this;
+                if (connectedTiles.Length > 0)
+                {
+                    for (int i = 0; i < connectedTiles.Length; i++)
+                    {
+                        if (connectedTiles[i] != ignoredTile)
+                        {
+                            float distance = (connectedTiles[i].worldPosition - worldPosition).magnitude;
+                            if (distance < lowestDistance && !connectedTiles[i].occupied)
+                            {
+                                tile = connectedTiles[i];
+                                lowestDistance = distance;
+                            }
+                        }                      
+                    }
+                }
+                return tile;
+            }
+
+            // should probably do actual pathing
+            //public List<Tile> CreatePath(Vector3 worldPosition, int steps, List<Tile> ignoredTiles)
+            //{
+            //    steps--;
+            //    float lowestDistance = Mathf.Infinity;
+            //    Tile tile = this;
+            //    if (connectedTiles.Length > 0)
+            //    {
+            //        for (int i = 0; i<connectedTiles.Length; i++)
+            //        {
+            //            if (!ignoredTiles.Contains(connectedTiles[i]))
+            //            {
+            //                float distance = (connectedTiles[i].worldPosition - worldPosition).magnitude;
+            //                if (distance<lowestDistance && !connectedTiles[i].occupied)
+            //                {
+            //                    tile = connectedTiles[i];
+            //                    lowestDistance = distance;
+            //                }
+            //            }
+            //        }
+            //    }
+            //    ignoredTiles
+            //}
 
            
         }

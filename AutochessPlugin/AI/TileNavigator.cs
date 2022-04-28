@@ -4,40 +4,66 @@ using System.Text;
 using RoR2;
 using UnityEngine;
 using RORAutochess.Units;
-using System.Linq;
+
 namespace RORAutochess.AI
 {
+    // absolutely need to redo AI
     public class TileNavigator : MonoBehaviour
     {
+        private static List<TileNavigator> instances = new List<TileNavigator>(); // list probably doesnt need to exist
+        private static float timeSinceLastUpdate;
+        public static float updateInterval = 0.75f;
+        public static event Action beforeTileUpdate;
+        public static event Action afterTileUpdate;
 
         private CharacterMaster owner;
         private CharacterBody ownerBody;
-        private EntityStateMachine aiStateMachine;
-        public int attackRange = 1;
-        public float moveDuration = 10f;
+        public int attackRange = 1; 
 
-        private bool disabled;
-        public GenericBoard currentBoard;
-        public GameObject targetBodyObject;
-        public CharacterMaster targetMaster;
-
+        public Vector3 moveVector;
+        public GenericBoard.Tile previousTile;
         public GenericBoard.Tile currentTile;
         public GenericBoard.Tile nextTile;
-        public GenericBoard.Tile targetTile;
+        public bool navigationEnabled = true;
+        public bool benched;
+        public GenericBoard currentBoard;
 
-        public event Action<GenericBoard.Tile> onMovementBegin;
-        /*
-         * select target
-         * submit movement towards target
-         * move towards target
-         * finish movement
-         * check if target in range
-         * 
-         */
+        static TileNavigator()
+        {
+            RoR2Application.onFixedUpdate += RoR2Application_onFixedUpdate;
+        }
+
+        private static void RoR2Application_onFixedUpdate() // non-static is probably a good idea
+        {
+            timeSinceLastUpdate += Time.fixedDeltaTime;
+            if (timeSinceLastUpdate >= updateInterval)
+            {
+                timeSinceLastUpdate -= updateInterval;
+                UpdateInstances();
+            }
+        }
+
+        public static void UpdateInstances()
+        {
+            if (beforeTileUpdate != null)
+                beforeTileUpdate.Invoke(); // probably want large units to move first ( if they exist )
+
+            if (instances.Count > 0)
+            {
+                foreach (TileNavigator tn in instances) // for movement
+                {
+                    if (tn.navigationEnabled && !tn.benched)
+                        tn.MoveTowardsTile();
+                }
+            }
+
+            if (afterTileUpdate != null)
+                afterTileUpdate.Invoke(); // for attacks
+        }
 
         private void Awake()
         {
-            if (!GenericBoard.inBoardScene) // should be gamemode check ?
+            if (!GenericBoard.inBoardScene) // should be gamemode check
             {
                 GameObject.Destroy(this);
                 return;
@@ -46,114 +72,13 @@ namespace RORAutochess.AI
             if (!this.owner)
                 this.owner = base.GetComponent<CharacterMaster>();
 
-            this.aiStateMachine = base.GetComponent<EntityStateMachine>();
-
             UnitData data = base.GetComponent<UnitData>();
             if(data)
             {
                 this.attackRange = data.attackRange;
-                this.moveDuration = data.movementDuration;
             }
 
-        }
-
-        public void PickUp()
-        {
-            this.enabled = false;
-        }
-
-        private void OnDisable()
-        {
-            this.aiStateMachine.SetNextState(new DoNothing());
-
-            this.currentTile = null;
-            this.nextTile = null;
-            this.targetTile = null;
-            this.targetBodyObject = null;
-            this.targetMaster = null;
-        }
-
-        public void PlaceDown(GenericBoard.Tile tile)
-        {
-            this.enabled = true;
-            this.currentTile = tile;
-        }
-
-        private void FixedUpdate()
-        {
-
-            if(!this.targetBodyObject)
-            {
-                TeamMask enemyTeams = TeamMask.GetEnemyTeams(this.ownerBody.teamComponent.teamIndex);               
-                HurtBox hurtBox = new SphereSearch
-                {
-                    radius = 200f,
-                    mask = LayerIndex.entityPrecise.mask,
-                    origin = this.ownerBody.gameObject.transform.position,
-                    queryTriggerInteraction = QueryTriggerInteraction.UseGlobal
-                }.RefreshCandidates().FilterCandidatesByHurtBoxTeam(enemyTeams).OrderCandidatesByDistance().FilterCandidatesByDistinctHurtBoxEntities().GetHurtBoxes().FirstOrDefault();
-
-                if (hurtBox && hurtBox.healthComponent && hurtBox.healthComponent.alive)
-                {
-                    this.ChangeTarget(hurtBox.healthComponent.gameObject);
-                }                             
-            }
-
-            if (this.aiStateMachine.state is StandAttack && this.targetBodyObject && this.currentTile.tileDistances.TryGetValue(this.currentBoard.GetClosestTile(this.targetBodyObject.transform.position), out int d) && d > this.attackRange)
-            {
-                this.StartMovement();
-            }
-        }
-        private void ChangeTarget(GameObject newTarget)
-        {
-            if(this.targetMaster) this.targetMaster.GetComponent<TileNavigator>().onMovementBegin -= OnTargetMovement;
-
-            this.targetBodyObject = newTarget;
-            this.targetMaster = this.targetBodyObject.GetComponent<CharacterBody>().master;
-            this.targetMaster.GetComponent<TileNavigator>().onMovementBegin += OnTargetMovement;
-
-            this.SetState();
-        }
-
-        private void OnTargetMovement(GenericBoard.Tile t)
-        {
-            if (this.currentTile.tileDistances.TryGetValue(t, out int d) && d > this.attackRange)
-            {
-                this.StartMovement();
-            }
-        }
-
-        private void StartMovement()
-        {
-            this.nextTile = this.currentTile.GetClosestConnectedTile(this.targetBodyObject.transform.position);
-            this.aiStateMachine.SetNextState(new MoveTowards { target = this.nextTile.worldPosition });
-
-            if (this.onMovementBegin != null)
-                this.onMovementBegin.Invoke(this.nextTile);
-        }
-
-        private void SetState()
-        {
-            GenericBoard.Tile t = this.currentBoard.GetClosestTile(this.targetBodyObject.transform.position);
-            if (this.currentTile.tileDistances.TryGetValue(t, out int d) && d > this.attackRange)
-            {
-                this.StartMovement();
-            }
-            else if (d <= this.attackRange)
-            {
-                this.aiStateMachine.SetNextState(new StandAttack { target = this.targetBodyObject });
-            }
-        }
-
-        public void ArriveAt(GenericBoard.Tile tile)
-        {
-            this.currentTile = tile;
-            this.SetState();           
-        }
-
-        public GenericBoard.Tile GetNextTile()
-        {
-            return this.currentTile.GetClosestConnectedTile(this.targetBodyObject.transform.position);
+            TileNavigator.instances.Add(this);
         }
 
         private void Start()
@@ -163,14 +88,104 @@ namespace RORAutochess.AI
             else
                 this.currentBoard = GenericBoard.instancesList[0]; // for testing remove later
 
+
             this.ownerBody = this.owner.GetBody();
         }
+        public static TileNavigator FindTileNavigator(CharacterMaster master)
+        {
+            foreach(TileNavigator tileNavigator in instances)
+            {
+                if (tileNavigator.owner == master)
+                    return tileNavigator;
+            }
+            return null;
+        }
 
+        public void Bench()
+        {
+            this.benched = true;
+            this.navigationEnabled = false;
+            //on benched
+        }
+        public void Unbench()
+        {
+            this.benched = false;
+            this.navigationEnabled = true;
+            // on unbenched
+        }
+
+        public void SetCurrentTile(GenericBoard.Tile tile) 
+        {
+            this.nextTile = null;
+            this.currentTile = tile;
+            this.currentTile.occupied = true;
+            bool bench = false;
+
+            for(int i = 0; i < currentBoard.benchTiles.Length; i++) // probably bad
+            {
+                if (tile == currentBoard.benchTiles[i])
+                {
+                    bench = true;
+                    break;
+                }              
+            }
+
+            if(!bench && this.benched)
+            {
+                this.Unbench();
+            }
+            else if(!this.benched)
+            {
+                this.Bench();
+            }
+            
+        }
+        
+        public void Pickup()
+        {
+            if(this.currentTile != null)
+                this.currentTile.occupied = false;
+
+            this.navigationEnabled = false;
+        }
+        private void OnDestroy()
+        {
+            if(this.nextTile != null)
+                this.nextTile.occupied = false;
+            if(this.currentTile != null)
+                this.currentTile.occupied = false;
+
+            TileNavigator.instances.Remove(this);
+        }
+
+        public GenericBoard.Tile RequestTileTowards(Vector3 position)
+        {
+            if (this.currentTile == null) this.currentTile = this.currentBoard.GetClosestTile(this.ownerBody.footPosition);
+
+            this.nextTile = this.currentTile.GetTileIgnore(position, this.previousTile);
+            this.nextTile.occupied = true;
+            this.currentTile.occupied = false;
+
+            return this.nextTile;
+
+        }
 
         private void MoveTowardsTile()
         {
+            if(this.nextTile != null)
+            {
+                this.moveVector = (this.nextTile.worldPosition - this.ownerBody.footPosition);
+                this.previousTile = this.currentTile;
+                this.currentTile = this.nextTile;
+                this.nextTile = null;
+            }
+            else
+            {
+                this.moveVector = Vector3.zero;
+            }
             
         }
+
 
     }
 }

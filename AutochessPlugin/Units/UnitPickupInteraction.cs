@@ -67,8 +67,8 @@ namespace RORAutochess.Units
                     driver.interactableOverride = base.gameObject;
                     if(GenericBoard.inBoardScene)
                     {
-                        TileNavigator t = this.master.GetComponent<TileNavigator>();
-                        t.PickUp();
+                        TileNavigator t = TileNavigator.FindTileNavigator(this.master);
+                        t.Pickup();
                     }
 
                 }
@@ -96,14 +96,13 @@ namespace RORAutochess.Units
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
                 Physics.Raycast(ray, out RaycastHit hit, 1000f);
                 Vector3 vector = hit.point;
-                TileNavigator t = this.master.GetComponent<TileNavigator>();
+                TileNavigator t = TileNavigator.FindTileNavigator(this.master);
 
                 GenericBoard.Tile tile = t.currentBoard.GetClosestTile(vector, true);
 
                 this.body.characterMotor.AddDisplacement(tile.worldPosition - base.transform.position);
                 this.body.characterMotor.velocity = Vector3.zero;
-                t.PlaceDown(tile);
-
+                t.SetCurrentTile(tile);
                 //Log.LogInfo(tile.index);
             }
         }

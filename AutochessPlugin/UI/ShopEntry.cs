@@ -82,7 +82,7 @@ namespace RORAutochess.UI
                     }
 
                     t.currentBoard = GenericBoard.GetBoardFromMaster(player);
-                    t.currentTile = tile;
+                    t.SetCurrentTile(tile);
                 }
                 else
                 {

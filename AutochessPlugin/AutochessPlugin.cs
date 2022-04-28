@@ -192,7 +192,7 @@ namespace RORAutochess
                 CharacterMaster player = firstLocalUser.cachedMaster;
                 AI.TileNavigator t = master.GetComponent<AI.TileNavigator>();
                 t.currentBoard = GenericBoard.GetBoardFromMaster(player);
-                t.currentTile = t.currentBoard.GetClosestTile(location);
+                t.SetCurrentTile(t.currentBoard.GetClosestTile(location));
 
             }
                 
