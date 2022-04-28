@@ -65,10 +65,10 @@ namespace RORAutochess.Units
                 {
                     pickedUp = true;
                     driver.interactableOverride = base.gameObject;
-                    if(GenericBoard.onBoard)
+                    if(GenericBoard.inBoardScene)
                     {
-                        TileNavigator t = TileNavigator.FindTileNavigatorByMaster(this.master);
-                        t.Pickup();
+                        TileNavigator t = this.master.GetComponent<TileNavigator>();
+                        t.PickUp();
                     }
 
                 }
@@ -91,18 +91,19 @@ namespace RORAutochess.Units
             pickedUp = false;
             if (this.driver.interactableOverride) this.driver.interactableOverride = null;
 
-            if (GenericBoard.onBoard)
+            if (GenericBoard.inBoardScene)
             {
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
                 Physics.Raycast(ray, out RaycastHit hit, 1000f);
                 Vector3 vector = hit.point;
-                TileNavigator t = TileNavigator.FindTileNavigatorByMaster(this.master);
+                TileNavigator t = this.master.GetComponent<TileNavigator>();
 
-                GenericBoard.Tile tile = t.currentBoard.GetClosestTile(vector);
+                GenericBoard.Tile tile = t.currentBoard.GetClosestTile(vector, true);
 
                 this.body.characterMotor.AddDisplacement(tile.worldPosition - base.transform.position);
                 this.body.characterMotor.velocity = Vector3.zero;
-                t.PlaceOnTile(tile);
+                t.PlaceDown(tile);
+
                 //Log.LogInfo(tile.index);
             }
         }
@@ -116,7 +117,10 @@ namespace RORAutochess.Units
                 Physics.Raycast(ray, out RaycastHit hit, 1000f);
                 Vector3 vector = hit.point;
                 vector.y += 5f;
-                this.body.characterMotor.AddDisplacement(vector - base.transform.position);
+                if(this.body.characterMotor)
+                    this.body.characterMotor.AddDisplacement(vector - base.transform.position);
+                else if (this.body.rigidbody)
+                    this.body.rigidbody.MovePosition(vector);
 
                 if(Input.GetMouseButtonUp(0))
                 {

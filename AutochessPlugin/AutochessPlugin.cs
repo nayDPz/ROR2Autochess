@@ -88,11 +88,12 @@ namespace RORAutochess
 
         private void CameraRigController_Start(On.RoR2.CameraRigController.orig_Start orig, CameraRigController self) 
         {
-            if(GenericBoard.onBoard)
+            if(GenericBoard.inBoardScene) // gamemode check
             {
                 if (self.createHud)
                 {
                     GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(AutochessRun.ui); // should learn to do IL eventually
+                    gameObject.transform.Find("MainContainer").Find("MainUIArea").Find("SpringCanvas").Find("BottomLeftCluster").Find("ChatBoxRoot").GetComponent<InstantiatePrefabBehavior>().prefab = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/ChatBox, In Run.prefab").WaitForCompletion(); // O_O
                     self.hud = gameObject.GetComponent<HUD>();
                     self.hud.cameraRigController = self;
                     self.hud.GetComponent<Canvas>().worldCamera = self.uiCam;
@@ -178,35 +179,21 @@ namespace RORAutochess
                 Physics.Raycast(ray, out RaycastHit hit, 1000f);
                 location = hit.point;
 
-                if(Input.GetKeyDown(KeyCode.LeftShift))
-                {
-                    LocalUser firstLocalUser = LocalUserManager.GetFirstLocalUser();
-                    CharacterMaster player = firstLocalUser.cachedMaster;
-                    new MasterSummon
-                    {
-                        masterPrefab = MasterCatalog.FindMasterPrefab("LemurianMaster"),
-                        summonerBodyObject = player.GetBodyObject(),
-                        ignoreTeamMemberLimit = true,
-                        inventoryToCopy = null,
-                        useAmbientLevel = new bool?(true),
-                        position = hit.point + Vector3.up,
-                        rotation = Quaternion.identity,
-                    }.Perform();
-                }            
-                else
-                {
-                    var masterprefab = MasterCatalog.FindMasterPrefab("LemurianMaster");
-                    var body = masterprefab.GetComponent<CharacterMaster>().bodyPrefab;
-                    var bodyGameObject = UnityEngine.Object.Instantiate<GameObject>(masterprefab, location, Quaternion.identity);
-                    CharacterMaster master = bodyGameObject.GetComponent<CharacterMaster>();
-                    NetworkServer.Spawn(bodyGameObject);
-                    master.bodyPrefab = body;
-                    master.teamIndex = TeamIndex.Monster;
-                    master.SpawnBody(location, Quaternion.identity);
-                }
+                var masterprefab = MasterCatalog.FindMasterPrefab("LemurianMaster");
+                var body = masterprefab.GetComponent<CharacterMaster>().bodyPrefab;
+                var bodyGameObject = UnityEngine.Object.Instantiate<GameObject>(masterprefab, location, Quaternion.identity);
+                CharacterMaster master = bodyGameObject.GetComponent<CharacterMaster>();
+                NetworkServer.Spawn(bodyGameObject);
+                master.bodyPrefab = body;
+                master.teamIndex = TeamIndex.Monster;
+                master.SpawnBody(location, Quaternion.identity);
                 
+                LocalUser firstLocalUser = LocalUserManager.GetFirstLocalUser();
+                CharacterMaster player = firstLocalUser.cachedMaster;
+                AI.TileNavigator t = master.GetComponent<AI.TileNavigator>();
+                t.currentBoard = GenericBoard.GetBoardFromMaster(player);
+                t.currentTile = t.currentBoard.GetClosestTile(location);
 
-               
             }
                 
 

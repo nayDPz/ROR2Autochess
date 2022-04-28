@@ -25,7 +25,7 @@ namespace RORAutochess.UI
 
         private GameObject InteractionDriver_FindBestInteractableObject(On.RoR2.InteractionDriver.orig_FindBestInteractableObject orig, InteractionDriver self)
         {
-            if(GenericBoard.onBoard)
+            if(GenericBoard.inBoardScene) // gamemode check plsss
             {
                 if (self.interactableOverride)
                 {
@@ -34,7 +34,6 @@ namespace RORAutochess.UI
                 float num = 0f;
                 Ray originalAimRay = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
                 Physics.Raycast(originalAimRay, out RaycastHit hit, 1000f, LayerIndex.world.intVal, QueryTriggerInteraction.Collide);
-                //Ray raycastRay = CameraRigController.ModifyAimRayIfApplicable(originalAimRay, base.gameObject, out num);
                 float num2 = 5f;
                 return self.interactor.FindBestInteractableObject(originalAimRay, num2 + num, hit.point, num2);
             }
@@ -52,7 +51,7 @@ namespace RORAutochess.UI
         }
         private void InteractionDriver_FixedUpdate(On.RoR2.InteractionDriver.orig_FixedUpdate orig, InteractionDriver self)
         {
-            if(GenericBoard.onBoard)
+            if(GenericBoard.inBoardScene)
             {
                 if (self.networkIdentity.hasAuthority)
                 {

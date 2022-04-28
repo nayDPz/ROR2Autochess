@@ -14,6 +14,11 @@ namespace RORAutochess.Units
         {
 
         }
+
+        public enum BodyFlags : uint
+        {
+
+        }
     }
 
 

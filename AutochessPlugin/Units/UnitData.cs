@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using RoR2;
 using UnityEngine;
+using EntityStates;
 
 namespace RORAutochess.Units
 {
@@ -12,7 +13,11 @@ namespace RORAutochess.Units
         public float cost = 25;
         public float sellPrice = 17;
         public int level = 1;
+        public int attackRange = 1;
+        public float movementDuration = 0.5f; // time it takes to move between tiles
+        public EntityState attackState;
 
+        //list of traits (somehow)
 
         private void Awake()
         {
@@ -25,6 +30,6 @@ namespace RORAutochess.Units
         public CharacterMaster master;
         public GameObject bodyObject;
 
-        //list of traits (somehow)
+        
     }
 }

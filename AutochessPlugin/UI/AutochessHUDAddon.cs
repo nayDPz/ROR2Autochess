@@ -19,6 +19,8 @@ namespace RORAutochess.UI
         private void Start()
         {
             this.targetMaster = base.GetComponent<HUD>().targetMaster;
+
+
         }
         public void Update()
         {

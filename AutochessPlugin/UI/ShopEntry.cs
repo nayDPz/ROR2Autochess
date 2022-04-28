@@ -37,7 +37,7 @@ namespace RORAutochess.UI
             if(unitData)
             {
                 unitMaster = unitData.master;
-                if (nameText) nameText.text = unitData.unitName;
+                if (nameText) nameText.text = Language.GetString(unitData.unitName);
                 if (cost) cost.text = unitData.cost.ToString();
                 if (icon) icon.texture = unitData.master.bodyPrefab.GetComponent<CharacterBody>().portraitIcon;
             }
@@ -49,23 +49,47 @@ namespace RORAutochess.UI
 
         }
 
-        private void OnButtonClicked() // needs bench stuff
+        private void OnButtonClicked()
         {
-            Chat.AddMessage("Purchased " + unitData.name.ToString());
-
             if(!unitMaster) unitMaster = unitData.master;
 
+
             CharacterMaster player = source;
-            new MasterSummon
+
+            GenericBoard board = GenericBoard.GetBoardFromMaster(player);
+            if(board != null)
             {
-                masterPrefab = unitMaster.gameObject,
-                summonerBodyObject = player.GetBodyObject(),
-                ignoreTeamMemberLimit = true,
-                inventoryToCopy = null,
-                useAmbientLevel = new bool?(true),
-                position = Vector3.zero + Vector3.up,
-                rotation = Quaternion.identity,
-            }.Perform();
+                GenericBoard.Tile[] bench = board.benchTiles;
+                GenericBoard.Tile tile = board.GetLowestUnoccupiedTile(bench);
+                if(tile != null)
+                {
+                    CharacterMaster m = new MasterSummon
+                    {
+                        masterPrefab = unitMaster.gameObject,
+                        summonerBodyObject = player.GetBodyObject(),
+                        ignoreTeamMemberLimit = true,
+                        inventoryToCopy = null,
+                        useAmbientLevel = new bool?(true),
+                        position = tile.worldPosition + Vector3.up,
+                        rotation = Quaternion.identity,
+                    }.Perform();
+
+                    AI.TileNavigator t = m.GetComponent<AI.TileNavigator>();
+
+                    if (!t) // probably shouldnt do this
+                    {
+                        t = m.gameObject.AddComponent<AI.TileNavigator>();
+                    }
+
+                    t.currentBoard = GenericBoard.GetBoardFromMaster(player);
+                    t.currentTile = tile;
+                }
+                else
+                {
+                    return;
+                }               
+            }
+            
 
             Destroy(base.gameObject);
         }
