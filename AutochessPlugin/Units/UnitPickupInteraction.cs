@@ -21,6 +21,7 @@ namespace RORAutochess.Units
         private Renderer mainRenderer;
         private MinionOwnership.MinionGroup minionGroup;
         private InteractionDriver driver;
+        private TileNavigator tileNavigator;
         private void Awake()
         {
             this.body = base.GetComponent<CharacterBody>();
@@ -35,6 +36,7 @@ namespace RORAutochess.Units
             }
             base.GetComponent<Highlight>().targetRenderer = this.mainRenderer;
             this.master = this.body.master;
+            this.tileNavigator = this.master.GetComponent<TileNavigator>();
         }
 
         public string GetContextString([NotNull] Interactor activator)
@@ -47,6 +49,7 @@ namespace RORAutochess.Units
             if(this.minionGroup == null) this.minionGroup = MinionOwnership.MinionGroup.FindGroup(activator.gameObject.GetComponent<CharacterBody>().master.netId);
             if(this.minionGroup == null) return Interactability.Disabled;
             if (this.master.minionOwnership.group != this.minionGroup) return Interactability.Disabled;
+            if (this.tileNavigator && this.tileNavigator.inCombat) return Interactability.ConditionsNotMet;
 
             return this.cooldown <= 0 ? Interactability.Available : Interactability.Disabled;
         }
@@ -67,8 +70,8 @@ namespace RORAutochess.Units
                     driver.interactableOverride = base.gameObject;
                     if(GenericBoard.inBoardScene)
                     {
-                        TileNavigator t = TileNavigator.FindTileNavigator(this.master);
-                        t.Pickup();
+                        
+                        this.tileNavigator.Pickup();
                     }
 
                 }
@@ -96,13 +99,12 @@ namespace RORAutochess.Units
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
                 Physics.Raycast(ray, out RaycastHit hit, 1000f);
                 Vector3 vector = hit.point;
-                TileNavigator t = TileNavigator.FindTileNavigator(this.master);
 
-                GenericBoard.Tile tile = t.currentBoard.GetClosestTile(vector, true);
+                GenericBoard.Tile tile = this.tileNavigator.currentBoard.GetClosestTile(vector, true);
 
                 this.body.characterMotor.AddDisplacement(tile.worldPosition - base.transform.position);
                 this.body.characterMotor.velocity = Vector3.zero;
-                t.SetCurrentTile(tile);
+                this.tileNavigator.SetCurrentTile(tile);
                 //Log.LogInfo(tile.index);
             }
         }
@@ -113,7 +115,7 @@ namespace RORAutochess.Units
             if(this.pickedUp)
             {
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
-                Physics.Raycast(ray, out RaycastHit hit, 1000f);
+                Physics.Raycast(ray, out RaycastHit hit, 1000f, LayerIndex.world.mask, QueryTriggerInteraction.UseGlobal);
                 Vector3 vector = hit.point;
                 vector.y += 5f;
                 if(this.body.characterMotor)

@@ -50,6 +50,9 @@ namespace RORAutochess
             Log.Init(Logger);
             PInfo = Info;
 
+            On.RoR2.Networking.NetworkManagerSystemSteam.OnClientConnect += (s, u, t) => { };
+
+
             if (scene == null)
             {
                 using (var assetStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("RORAutochess.genericboardscene"))
@@ -75,8 +78,11 @@ namespace RORAutochess
             GenericBoard.Setup(15, 12, 0.1f, 4f);
             //Player.PlayerBodyObject.CreatePrefab();
             AutochessRun.CreatePrefab();
+            Board.RoundController.Init();
             UI.InventoryClickDrag.Init();
             UI.Shop.Init();
+
+
 
             On.RoR2.UI.MainMenu.MainMenuController.Start += MainMenuController_Start;
             On.RoR2.CameraRigController.Start += CameraRigController_Start;
@@ -93,7 +99,8 @@ namespace RORAutochess
                 if (self.createHud)
                 {
                     GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(AutochessRun.ui); // should learn to do IL eventually
-                    gameObject.transform.Find("MainContainer").Find("MainUIArea").Find("SpringCanvas").Find("BottomLeftCluster").Find("ChatBoxRoot").GetComponent<InstantiatePrefabBehavior>().prefab = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/ChatBox, In Run.prefab").WaitForCompletion(); // O_O
+                    gameObject.transform.Find("MainContainer").Find("MainUIArea").Find("SpringCanvas").Find("BottomLeftCluster").Find("ChatBoxRoot").GetComponent<InstantiatePrefabBehavior>().prefab = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/ChatBox, In Run.prefab").WaitForCompletion();
+                    gameObject.transform.Find("MainContainer").Find("MainUIArea").Find("SpringCanvas").Find("AutochessRunInfoHudPanel").Find("TimerPanel").Find("TimerText").GetComponent<TimerText>().format = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<TimerStringFormatter>("RoR2/Base/Common/tsfRunStopwatch.asset").WaitForCompletion(); // O_O
                     self.hud = gameObject.GetComponent<HUD>();
                     self.hud.cameraRigController = self;
                     self.hud.GetComponent<Canvas>().worldCamera = self.uiCam;

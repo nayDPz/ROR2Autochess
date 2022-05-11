@@ -72,7 +72,9 @@ namespace RORAutochess.UI
                         useAmbientLevel = new bool?(true),
                         position = tile.worldPosition + Vector3.up,
                         rotation = Quaternion.identity,
+                        
                     }.Perform();
+                    m.destroyOnBodyDeath = false;
 
                     AI.TileNavigator t = m.GetComponent<AI.TileNavigator>();
 

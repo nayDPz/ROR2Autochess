@@ -7,7 +7,6 @@ using RORAutochess.Units;
 
 namespace RORAutochess.AI
 {
-    // absolutely need to redo AI
     public class TileNavigator : MonoBehaviour
     {
         private static List<TileNavigator> instances = new List<TileNavigator>(); // list probably doesnt need to exist
@@ -16,16 +15,19 @@ namespace RORAutochess.AI
         public static event Action beforeTileUpdate;
         public static event Action afterTileUpdate;
 
-        private CharacterMaster owner;
-        private CharacterBody ownerBody;
+        public CharacterMaster owner;
+        public CharacterBody ownerBody;
         public int attackRange = 1; 
 
         public Vector3 moveVector;
         public GenericBoard.Tile previousTile;
         public GenericBoard.Tile currentTile;
         public GenericBoard.Tile nextTile;
-        public bool navigationEnabled = true;
+
+        public bool navigationEnabled;
         public bool benched;
+        public bool inCombat;
+
         public GenericBoard currentBoard;
 
         static TileNavigator()
@@ -52,23 +54,17 @@ namespace RORAutochess.AI
             {
                 foreach (TileNavigator tn in instances) // for movement
                 {
-                    if (tn.navigationEnabled && !tn.benched)
+                    if (tn.navigationEnabled && tn.inCombat)
                         tn.MoveTowardsTile();
                 }
             }
 
             if (afterTileUpdate != null)
-                afterTileUpdate.Invoke(); // for attacks
+                afterTileUpdate.Invoke(); // check attack range
         }
 
         private void Awake()
         {
-            if (!GenericBoard.inBoardScene) // should be gamemode check
-            {
-                GameObject.Destroy(this);
-                return;
-            }
-
             if (!this.owner)
                 this.owner = base.GetComponent<CharacterMaster>();
 
@@ -134,7 +130,7 @@ namespace RORAutochess.AI
             {
                 this.Unbench();
             }
-            else if(!this.benched)
+            else if(bench && !this.benched)
             {
                 this.Bench();
             }

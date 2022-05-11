@@ -40,7 +40,6 @@ namespace RORAutochess.UI
         }
         public void RefreshShop()
         {
-            Chat.AddMessage("Refreshing Shop");
             foreach (ShopSlot slot in shopSlots)
             {
                 slot.RefreshEntry();

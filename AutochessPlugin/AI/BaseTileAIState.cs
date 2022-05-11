@@ -21,6 +21,8 @@ namespace RORAutochess.AI
         {
             base.OnEnter();
             this.navigator = base.GetComponent<TileNavigator>();
+            this.navigator.ownerBody = base.body;
+            this.navigator.owner = base.characterMaster;
             this.bodyStateMachine = base.body.GetComponents<EntityStateMachine>().Where(x => x.customName == "Body").FirstOrDefault();
 
             TileNavigator.beforeTileUpdate += RequestAI;
@@ -30,11 +32,12 @@ namespace RORAutochess.AI
 
         private void RequestAI()
         {
-            if(!this.navigator.benched)
+            if(this.navigator.inCombat && base.body)
             {
-                TeamMask enemyTeams = TeamMask.GetEnemyTeams(base.body.teamComponent.teamIndex);
-                if (!this.target)
+                if(!this.target || !this.targetInRange)
                 {
+                    TeamMask enemyTeams = TeamMask.GetEnemyTeams(base.body.teamComponent.teamIndex);
+
                     HurtBox hurtBox = new SphereSearch
                     {
                         radius = 200f,
@@ -46,6 +49,8 @@ namespace RORAutochess.AI
                     if (hurtBox && hurtBox.healthComponent && hurtBox.healthComponent.alive)
                         this.target = hurtBox;
                 }
+                
+                
 
                 bool needMovement = false;
                 if (this.target && this.bodyStateMachine.IsInMainState())
@@ -53,7 +58,7 @@ namespace RORAutochess.AI
                     if (!this.targetInRange)
                     {
                         needMovement = true;
-                        this.navigator.RequestTileTowards(this.target.transform.position);
+                        this.navigator.RequestTileTowards(this.target.healthComponent.transform.position);
                     }
                 }
                 this.navigator.navigationEnabled = needMovement;
@@ -63,14 +68,14 @@ namespace RORAutochess.AI
 
         private void UpdateAI()
         {
-            if(!this.navigator.benched)
+            if(this.navigator.inCombat && base.body)
             {
                 if (this.target)
                 {
                     CharacterMaster m = this.target.healthComponent.body.master;
                     TileNavigator t = m.GetComponent<TileNavigator>();
 
-                    GenericBoard.Tile tile = t != null ? t.currentTile : this.navigator.currentBoard.GetClosestTile(this.target.transform.position);
+                    GenericBoard.Tile tile = t != null ? t.currentTile : this.navigator.currentBoard.GetClosestTile(this.target.healthComponent.transform.position);
                     int d;
                     this.targetInRange = this.navigator.currentTile.tileDistances.TryGetValue(tile, out d) && d <= this.navigator.attackRange;
                 }
@@ -87,19 +92,20 @@ namespace RORAutochess.AI
             TileNavigator.afterTileUpdate -= UpdateAI;
         }
 
-        public override BaseAI.BodyInputs GenerateBodyInputs(in BaseAI.BodyInputs previousBodyInputs) // implement skilldrivers somehow
+        public override BaseAI.BodyInputs GenerateBodyInputs(in BaseAI.BodyInputs previousBodyInputs) // implement skilldrivers somehow ?
         {
             this.bodyInputs.moveVector = Vector3.zero;
             bool pressSkill1 = false;
             bool pressSkill2 = false;
             bool pressSkill3 = false;
             bool pressSkill4 = false;
-			if (this.target)
+
+			if (this.target && this.navigator.inCombat)
 			{
                 int d;
                 pressSkill1 = this.targetInRange && !this.navigator.navigationEnabled;
 
-                this.bodyInputs.desiredAimDirection = this.target.transform.position - base.body.transform.position;
+                this.bodyInputs.desiredAimDirection = this.target.healthComponent.transform.position - base.body.transform.position;
 
                 if(this.navigator.navigationEnabled)
                 {

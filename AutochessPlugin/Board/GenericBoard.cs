@@ -6,6 +6,8 @@ using UnityEngine;
 using RoR2.Navigation;
 using UnityEngine.SceneManagement;
 using RORAutochess.AI;
+using RORAutochess.Units;
+using UnityEngine.Networking;
 
 namespace RORAutochess
 {
@@ -31,12 +33,10 @@ namespace RORAutochess
         public Tile[] benchTiles;
         public Vector3 benchPos = new Vector3(0.5f, 0, 3.75f);
 
-        public CharacterMaster boardOwner;
-
-        public List<CharacterBody> ownerUnitBodies = new List<CharacterBody>();
-        public List<CharacterBody> enemyUnitBodies = new List<CharacterBody>();
-        
-
+        public CharacterMaster owner;
+        public List<UnitData> ownerUnitsOnBoard = new List<UnitData>();
+        public List<UnitData> enemyUnitsOnBoard = new List<UnitData>();
+        private CharacterMaster enemy;
         
         public static void Setup(int x, int y, float gap, float scale)
         {
@@ -67,7 +67,6 @@ namespace RORAutochess
             SceneManager.sceneLoaded += SetupBoard;
             RoR2.Stage.onStageStartGlobal += SetupPlayers;
         }
-
         private static void SetupPlayers(Stage stage)
         {
             if (stage.sceneDef == GenericBoard.sceneDef)
@@ -79,7 +78,7 @@ namespace RORAutochess
                     CharacterMaster player = l.cachedMaster;
                     GameObject obj = new GameObject("Board_" + l.userProfile.name); //???????
                     GenericBoard board = obj.AddComponent<GenericBoard>();
-                    board.boardOwner = player;
+                    board.owner = player;
                     player.gameObject.AddComponent<Traits.UnitOwnership>();
 
                     //GenericBoard board = new GenericBoard(startPos, GenericBoard.boardWidth, GenericBoard.boardHeight, l.cachedMaster);
@@ -91,6 +90,7 @@ namespace RORAutochess
 
             }
         }
+
 
         [SystemInitializer(typeof(GameModeCatalog))]
         private static void SetupTestUnits()
@@ -109,13 +109,18 @@ namespace RORAutochess
 
                 master.gameObject.AddComponent<AI.TileNavigator>();
 
-                if (master.GetComponent<RoR2.CharacterAI.BaseAI>())
-                    master.GetComponent<RoR2.CharacterAI.BaseAI>().fullVision = true;
-
-                if (master.GetComponent<EntityStateMachine>())
+                RoR2.CharacterAI.BaseAI ai = master.GetComponent<RoR2.CharacterAI.BaseAI>();
+                if (ai)
                 {
-                    master.GetComponent<EntityStateMachine>().initialStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
-                    master.GetComponent<EntityStateMachine>().mainStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
+                    ai.fullVision = true;
+                    ai.scanState = new EntityStates.SerializableEntityStateType(typeof(BaseTileAIState));
+                }
+
+                EntityStateMachine m = master.GetComponent<EntityStateMachine>();
+                if (m)
+                {
+                    m.initialStateType = new EntityStates.SerializableEntityStateType(typeof(BaseTileAIState));
+                    m.mainStateType = new EntityStates.SerializableEntityStateType(typeof(BaseTileAIState));
                 }
 
 
@@ -145,6 +150,9 @@ namespace RORAutochess
                 GlobalEventManager manager = ev.AddComponent<GlobalEventManager>();
                 SceneManager.MoveGameObjectToScene(ev, scene);
 
+                GameObject.Instantiate<GameObject>(Board.RoundController.prefab);
+
+
                 //GameObject stage = GameObject.Find("Grid(Clone)");
                 //stage.transform.localScale *= GenericBoard.scale * 2;
                 //GameObject floor = stage.transform.Find("Floor").gameObject;
@@ -173,6 +181,16 @@ namespace RORAutochess
 
 
         }
+        public static GenericBoard GetBoardFromMaster(CharacterMaster m)
+        {
+            foreach (GenericBoard board in instancesList)
+            {
+                if (board.owner == m)
+                    return board;
+            }
+            return null;
+        }
+
 
         private void Awake()
         {
@@ -182,7 +200,7 @@ namespace RORAutochess
             g.gridHeight = GenericBoard.boardHeight;
             g.gap = gap;
             g.scale = GenericBoard.scale;
-            tiles = GenerateTiles(boardWidth, boardHeight, gap, scale, base.transform.position); // should probably combine tile and hexagon generation ?
+            tiles = GenerateTiles(boardWidth, boardHeight, gap, scale, base.transform.position); // should probably combine tile and hexagon generation ??
 
             benchTiles = GenerateBenchTiles(scale, base.transform.position);
             benchInstance = GameObject.Instantiate<GameObject>(GenericBoard.benchPrefab, base.transform);
@@ -199,12 +217,132 @@ namespace RORAutochess
             GenericBoard.instancesList.Add(this);
         }
 
+        public void SetUnitPositions()
+        {
+            this.ownerUnitsOnBoard = new List<UnitData>();
+
+            MinionOwnership.MinionGroup unitGroup = MinionOwnership.MinionGroup.FindGroup(this.owner.netId);
+            foreach(MinionOwnership o in unitGroup.members)
+            {
+                if(o)
+                {
+                    UnitData data = o.gameObject.GetComponent<UnitData>();
+                    data.navigator.inCombat = false;
+                    if (!data.navigator.benched)
+                    {
+                        data.tileIndex = data.navigator.currentTile.index;
+                        this.ownerUnitsOnBoard.Add(data);
+                    }
+                }
+                              
+            }
+        }
+
+        public static int testPveRoundEnemies = 9;
+        public List<UnitData> CreatePVERound() // giga testing. could do director stuff here?
+        {
+            var enemyUnits = new List<UnitData>(); 
+            var masters = new GameObject[testPveRoundEnemies];
+
+            var choices = new GameObject[]{ MasterCatalog.FindMasterPrefab("LemurianMaster"), MasterCatalog.FindMasterPrefab("GolemMaster"), MasterCatalog.FindMasterPrefab("BeetleMaster") };
+
+            for (int i = 0; i < masters.Length; i++)
+            {
+                int z = UnityEngine.Random.RandomRangeInt(0, choices.Length);
+                var body = choices[z].GetComponent<CharacterMaster>().bodyPrefab;
+
+                masters[i] = UnityEngine.Object.Instantiate<GameObject>(choices[z]);
+                CharacterMaster master = masters[i].GetComponent<CharacterMaster>();                
+                NetworkServer.Spawn(masters[i]);
+                master.bodyPrefab = body;
+                master.teamIndex = TeamIndex.Monster;
+
+                enemyUnits.Add(masters[i].GetComponent<UnitData>());
+            }
+
+            foreach(UnitData data in enemyUnits)
+            {
+                data.tileIndex = UnityEngine.Random.RandomRangeInt(0, (this.tiles.Length / 2)-1);
+            }
+            return enemyUnits;
+
+
+        }
+        public void ResetBoard()
+        {
+
+            for (int i = 0; i < tiles.Length; i++)
+            {
+                tiles[i].occupied = false;
+            }
+
+            foreach (UnitData unit in this.enemyUnitsOnBoard)
+            {
+                if(unit && unit.master)
+                    unit.master.TrueKill(); // FOR TESTING
+            }
+            this.enemyUnitsOnBoard.Clear();
+            foreach(UnitData unit in this.ownerUnitsOnBoard)
+            {
+                unit.navigator.inCombat = false;
+                RespawnUnitHome(unit);
+            }
+            this.ownerUnitsOnBoard.Clear();
+        }
+
+        private void RespawnUnitHome(UnitData unit)
+        {
+            Vector3 location = this.tiles[unit.tileIndex].worldPosition;
+
+            CharacterMaster master = unit.master;
+
+            master.Respawn(location, Quaternion.identity);
+            
+            AI.TileNavigator t = master.GetComponent<AI.TileNavigator>();
+            t.currentBoard = this;
+            t.SetCurrentTile(this.tiles[unit.tileIndex]);
+        }
+
+        public void CreateEnemyTeam(List<UnitData> enemyUnits, CharacterMaster enemyPlayer)
+        {
+            this.enemyUnitsOnBoard = new List<UnitData>();
+            foreach (UnitData unit in enemyUnits)
+            {
+
+                int i = (this.tiles.Length - 1) - unit.tileIndex;
+                Vector3 location = this.tiles[i].worldPosition;
+
+                CharacterMaster master = unit.master;
+
+                master.Respawn(location, Quaternion.identity);
+
+                AI.TileNavigator t = master.GetComponent<AI.TileNavigator>();
+                t.currentBoard = this;
+                t.SetCurrentTile(this.tiles[i]);
+
+                this.enemyUnitsOnBoard.Add(unit);
+            }
+
+
+        }
+
+        public void SetCombat(bool b)
+        {
+            foreach (UnitData unit in this.ownerUnitsOnBoard)
+            {
+                unit.navigator.inCombat = b;
+                unit.master.teamIndex = TeamIndex.Player;
+            }
+            foreach (UnitData unit in this.enemyUnitsOnBoard)
+            {
+                unit.navigator.inCombat = b;
+                unit.master.teamIndex = TeamIndex.Monster;
+            }
+        }
         private void OnDestroy()
         {
             GenericBoard.instancesList.Remove(this);
         }
-
-
 
         private Tile[] GenerateBenchTiles(float scale, Vector3 startPos)
         {
@@ -220,14 +358,9 @@ namespace RORAutochess
                     board = this,
                 };
             }
-
             return tiles;
         }
-
-
-        
-
-        private Tile[] GenerateTiles(int x, int y, float gap, float scale, Vector3 startPos) 
+        private Tile[] GenerateTiles(int x, int y, float gap, float scale, Vector3 startPos) // can be static if i decide all boards are same size
         {
 
 
@@ -340,17 +473,7 @@ namespace RORAutochess
 
             
             return tiles;
-        }
-
-        public static GenericBoard GetBoardFromMaster(CharacterMaster m)
-        {
-            foreach (GenericBoard board in instancesList)
-            {
-                if (board.boardOwner == m)
-                    return board;
-            }
-            return null;
-        }
+        }        
         public Tile GetLowestUnoccupiedTile(Tile[] tiles)
         {
             for (int i = 0; i < tiles.Length; i++)
@@ -396,12 +519,6 @@ namespace RORAutochess
             return tile;
         }
 
-
-
-        public Tile GetTileFromIndex(int index)
-        {
-            return tiles[index];
-        }
         public class Tile
         {
             public Dictionary<Tile, int> tileDistances;
@@ -420,7 +537,7 @@ namespace RORAutochess
                 connectedTiles = new Tile[connectedTileIndices.Length];
                 for(int i = 0; i < connectedTileIndices.Length; i++)
                 {
-                    connectedTiles[i] = board.GetTileFromIndex(connectedTileIndices[i]);
+                    connectedTiles[i] = board.tiles[connectedTileIndices[i]];
                 }
                 
             }
@@ -449,7 +566,7 @@ namespace RORAutochess
             
             public Tile GetClosestConnectedTile(int targetTileIndex)
             {
-                return GetClosestConnectedTile(board.GetTileFromIndex(targetTileIndex));
+                return GetClosestConnectedTile(board.tiles[targetTileIndex]);
             }
             public Tile GetClosestConnectedTile(Tile targetTile)
             {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using RoR2;
-
+using System.Linq;
 namespace RORAutochess.UI
 {
     public class ShopSlot : MonoBehaviour
@@ -15,8 +15,9 @@ namespace RORAutochess.UI
 
         public void RefreshEntry() 
         {
-            int i = UnityEngine.Random.Range(0, MasterCatalog.masterPrefabs.Length - 1); // rng goes here
-            CharacterMaster master = MasterCatalog.masterPrefabs[i].GetComponent<CharacterMaster>();
+            List<GameObject> masters = MasterCatalog.masterPrefabs.Where(x => x.GetComponent<Units.UnitData>() != null && x.GetComponent<Units.UnitData>().master != null).ToList();
+            int i = UnityEngine.Random.Range(0, masters.Count - 1); // rng goes here
+            CharacterMaster master = masters[i].GetComponent<CharacterMaster>();
 
             if (shopEntryInstance) GameObject.Destroy(shopEntryInstance);
 

@@ -50,6 +50,12 @@ namespace RORAutochess
             
         }
 
+        public override void Start()
+        {
+            base.Start();
+            
+        }
+
         [SystemInitializer(typeof(GameModeCatalog))]
         private static void E()
         {

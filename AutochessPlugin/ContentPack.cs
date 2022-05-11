@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 using RoR2;
 using UnityEngine;
+using System;
+using RORAutochess.AI;
+using RORAutochess.Board;
+
 namespace RORAutochess
 {
     internal class ContentPacks : IContentPackProvider
@@ -12,9 +16,19 @@ namespace RORAutochess
         internal static List<GameObject> bodyPrefabs = new List<GameObject>();
         internal static List<SceneDef> sceneDefs = new List<SceneDef>();
         internal static List<GameObject> gameModePrefabs = new List<GameObject>();
+        internal static List<Type> entityStates = new List<Type>();
+
         public void Initialize()
         {
             ContentManager.collectContentPackProviders += ContentManager_collectContentPackProviders;
+
+            entityStates.Add(typeof(CombatPhase));
+            entityStates.Add(typeof(PostCombatPhase));
+            entityStates.Add(typeof(PreCombatPhase));
+            entityStates.Add(typeof(PrepPhase));
+            entityStates.Add(typeof(BaseTileAIState));
+
+
         }
 
         private void ContentManager_collectContentPackProviders(ContentManager.AddContentPackProviderDelegate addContentPackProvider)
@@ -28,6 +42,7 @@ namespace RORAutochess
             contentPack.sceneDefs.Add(sceneDefs.ToArray());
             contentPack.gameModePrefabs.Add(gameModePrefabs.ToArray());
             contentPack.bodyPrefabs.Add(bodyPrefabs.ToArray());
+            contentPack.entityStateTypes.Add(entityStates.ToArray());
             args.ReportProgress(1f);
             yield break;
         }

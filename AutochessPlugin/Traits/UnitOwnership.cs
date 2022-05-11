@@ -37,22 +37,18 @@ namespace RORAutochess.Traits
         public T AddTraitBehavior<T>(int count) where T : TraitBehavior
         {
             T t = master.gameObject.GetComponent<T>();
-            Debug.Log("g");
             if (count > 0)
             {
                 if (!t)
                 {
                     t = master.gameObject.AddComponent<T>();
-                    Debug.Log("g");
                     this.activeTraits.Add(t);
                     t.ownerMaster = this.master;
                     t.unitGroup = this.unitGroup;
                     t.enabled = true;
-                    Debug.Log("g");
                 }
                 
                 t.Level = t.GetTraitLevel(count);
-                Debug.Log("g");
                 return t;
             }
             if (t)
