@@ -4,7 +4,7 @@ using System.Text;
 using UnityEngine;
 using RoR2;
 
-namespace RORAutochess.Board
+namespace RORAutochess
 {
     class MonsterRoundGenerator : MonoBehaviour
     {

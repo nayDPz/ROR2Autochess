@@ -25,7 +25,7 @@ namespace RORAutochess.UI
 
         private GameObject InteractionDriver_FindBestInteractableObject(On.RoR2.InteractionDriver.orig_FindBestInteractableObject orig, InteractionDriver self)
         {
-            if(GenericBoard.inBoardScene) // gamemode check plsss
+            if(ChessBoard.inBoardScene) // gamemode check plsss
             {
                 if (self.interactableOverride)
                 {
@@ -51,7 +51,7 @@ namespace RORAutochess.UI
         }
         private void InteractionDriver_FixedUpdate(On.RoR2.InteractionDriver.orig_FixedUpdate orig, InteractionDriver self)
         {
-            if(GenericBoard.inBoardScene)
+            if(ChessBoard.inBoardScene)
             {
                 if (self.networkIdentity.hasAuthority)
                 {

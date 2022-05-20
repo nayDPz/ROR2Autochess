@@ -26,7 +26,6 @@ namespace RORAutochess
             entityStates.Add(typeof(PostCombatPhase));
             entityStates.Add(typeof(PreCombatPhase));
             entityStates.Add(typeof(PrepPhase));
-            entityStates.Add(typeof(BaseTileAIState));
 
 
         }

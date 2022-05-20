@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 4225426773
+CRC: 2537989040
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4565207f86c3e579de4f58b6addb5190
+    Hash: f32b7518148f296d18a3bfc78e31e7fa
   TypeTreeHash:
     serializedVersion: 2
-    Hash: f1bf62a463c2946e5c2af5e808cab06f
+    Hash: 1a16e492316a3245c507872e775a7b84
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -33,11 +33,18 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 108
   Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 1052602003, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
+- Class: 114
+  Script: {fileID: -1077643037, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
 - Class: 157
   Script: {instanceID: 0}
 - Class: 196
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/genericboardscene.unity
-Dependencies: []
+- Assets/OldStuff/genericboardscene.unity
+Dependencies:
+- C:/Users/natep/source/repos/ROR2Autochess/AutochessPlugin/hudautochess

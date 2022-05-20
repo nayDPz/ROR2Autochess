@@ -19,7 +19,7 @@ namespace RORAutochess.Board
             base.FixedUpdate();
             if (base.fixedAge >= this.roundController.postCombatDuration)
             {
-                foreach (GenericBoard board in this.roundController.boards)
+                foreach (ChessBoard board in this.roundController.boards)
                 {
                     board.ResetBoard();
                 }

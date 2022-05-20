@@ -80,6 +80,7 @@ namespace RORAutochess.Board
                 }
             }
             base.transform.parent.localScale *= scale; // this is bad
+            base.transform.parent.Find("Colliders").localScale *= 2;
         }
     }
 }

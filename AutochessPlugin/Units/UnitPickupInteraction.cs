@@ -10,7 +10,7 @@ using RORAutochess.AI;
 namespace RORAutochess.Units
 {
     [RequireComponent(typeof(Highlight), typeof(EntityLocator))]
-    class UnitPickupInteraction : MonoBehaviour, IInteractable // SHOULD PROBABLY MAKE THIS A HEX INTERACTION INSTEAD OF UNIT
+    class UnitPickupInteraction : MonoBehaviour // SHOULD PROBABLY MAKE THIS A HEX INTERACTION INSTEAD OF UNIT
     {
         private bool pickedUp;
 
@@ -20,7 +20,7 @@ namespace RORAutochess.Units
         private CharacterBody body;
         private Renderer mainRenderer;
         private MinionOwnership.MinionGroup minionGroup;
-        private InteractionDriver driver;
+        private UI.MouseInteractionDriver2 driver;
         private TileNavigator tileNavigator;
         private void Awake()
         {
@@ -44,9 +44,9 @@ namespace RORAutochess.Units
             return !pickedUp ? "Pick up Unit" : "Put down Unit";
         }
 
-        public Interactability GetInteractability([NotNull] Interactor activator)
+        public Interactability GetInteractability([NotNull] CharacterMaster activator) // yuck
         {
-            if(this.minionGroup == null) this.minionGroup = MinionOwnership.MinionGroup.FindGroup(activator.gameObject.GetComponent<CharacterBody>().master.netId);
+            if(this.minionGroup == null) this.minionGroup = MinionOwnership.MinionGroup.FindGroup(activator.netId);
             if(this.minionGroup == null) return Interactability.Disabled;
             if (this.master.minionOwnership.group != this.minionGroup) return Interactability.Disabled;
             if (this.tileNavigator && this.tileNavigator.inCombat) return Interactability.ConditionsNotMet;
@@ -54,21 +54,21 @@ namespace RORAutochess.Units
             return this.cooldown <= 0 ? Interactability.Available : Interactability.Disabled;
         }
 
-        public void OnInteractionBegin([NotNull] Interactor activator)
+        public void PickupUnit(CharacterMaster activator)
         {
             if (!this.master)
                 this.master = this.body.master;
 
             this.cooldown = 0.05f;
 
-            driver = activator.GetComponent<InteractionDriver>();
+            driver = activator.GetComponent<UI.MouseInteractionDriver2>(); // not necessary
             if(driver)
             {
                 if (!pickedUp)
                 {
                     pickedUp = true;
                     driver.interactableOverride = base.gameObject;
-                    if(GenericBoard.inBoardScene)
+                    if(ChessBoard.inBoardScene)
                     {
                         
                         this.tileNavigator.Pickup();
@@ -94,13 +94,13 @@ namespace RORAutochess.Units
             pickedUp = false;
             if (this.driver.interactableOverride) this.driver.interactableOverride = null;
 
-            if (GenericBoard.inBoardScene)
+            if (ChessBoard.inBoardScene)
             {
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
                 Physics.Raycast(ray, out RaycastHit hit, 1000f);
                 Vector3 vector = hit.point;
 
-                GenericBoard.Tile tile = this.tileNavigator.currentBoard.GetClosestTile(vector, true);
+                ChessBoard.Tile tile = this.tileNavigator.currentBoard.GetClosestTile(vector, true);
 
                 this.body.characterMotor.AddDisplacement(tile.worldPosition - base.transform.position);
                 this.body.characterMotor.velocity = Vector3.zero;

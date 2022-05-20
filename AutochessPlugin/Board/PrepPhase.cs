@@ -12,7 +12,7 @@ namespace RORAutochess.Board
             this.roundController.currentPhaseDuration = this.roundController.prepDuration;
             if (base.fixedAge >= this.roundController.prepDuration)
             {
-                foreach (GenericBoard board in this.roundController.boards)
+                foreach (ChessBoard board in this.roundController.boards)
                 {
                     board.SetUnitPositions();
                 }

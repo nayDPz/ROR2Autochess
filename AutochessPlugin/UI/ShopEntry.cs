@@ -56,11 +56,10 @@ namespace RORAutochess.UI
 
             CharacterMaster player = source;
 
-            GenericBoard board = GenericBoard.GetBoardFromMaster(player);
+            ChessBoard board = ChessBoard.GetBoardFromMaster(player);
             if(board != null)
             {
-                GenericBoard.Tile[] bench = board.benchTiles;
-                GenericBoard.Tile tile = board.GetLowestUnoccupiedTile(bench);
+                ChessBoard.Tile tile = board.GetLowestUnoccupiedTile(board.tiles);
                 if(tile != null)
                 {
                     CharacterMaster m = new MasterSummon
@@ -76,6 +75,7 @@ namespace RORAutochess.UI
                     }.Perform();
                     m.destroyOnBodyDeath = false;
 
+                    m.GetComponent<RoR2.CharacterAI.BaseAI>().enabled = false;
                     AI.TileNavigator t = m.GetComponent<AI.TileNavigator>();
 
                     if (!t) // probably shouldnt do this
@@ -83,7 +83,7 @@ namespace RORAutochess.UI
                         t = m.gameObject.AddComponent<AI.TileNavigator>();
                     }
 
-                    t.currentBoard = GenericBoard.GetBoardFromMaster(player);
+                    t.currentBoard = board;
                     t.SetCurrentTile(tile);
                 }
                 else

@@ -19,7 +19,7 @@ namespace RORAutochess.Board
             e.initialStateType = new EntityStates.SerializableEntityStateType(typeof(PrepPhase));
         }
 
-        public List<GenericBoard> boards;
+        public List<ChessBoard> boards;
 
         public float currentPhaseDuration;
         public float currentPhaseTime;
@@ -41,7 +41,7 @@ namespace RORAutochess.Board
             if (!instance) instance = this;
             else Destroy(this);
 
-            this.boards = GenericBoard.instancesList;
+            this.boards = ChessBoard.instancesList;
         }
     }
 }

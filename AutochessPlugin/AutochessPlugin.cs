@@ -75,7 +75,7 @@ namespace RORAutochess
                 }
             }
 
-            GenericBoard.Setup(15, 12, 0.1f, 4f);
+            ChessBoard.Setup(15, 12, 0.1f, 4f);
             //Player.PlayerBodyObject.CreatePrefab();
             AutochessRun.CreatePrefab();
             Board.RoundController.Init();
@@ -94,7 +94,7 @@ namespace RORAutochess
 
         private void CameraRigController_Start(On.RoR2.CameraRigController.orig_Start orig, CameraRigController self) 
         {
-            if(GenericBoard.inBoardScene) // gamemode check
+            if(ChessBoard.inBoardScene) // gamemode check
             {
                 if (self.createHud)
                 {
@@ -198,7 +198,7 @@ namespace RORAutochess
                 LocalUser firstLocalUser = LocalUserManager.GetFirstLocalUser();
                 CharacterMaster player = firstLocalUser.cachedMaster;
                 AI.TileNavigator t = master.GetComponent<AI.TileNavigator>();
-                t.currentBoard = GenericBoard.GetBoardFromMaster(player);
+                t.currentBoard = ChessBoard.GetBoardFromMaster(player);
                 t.SetCurrentTile(t.currentBoard.GetClosestTile(location));
 
             }

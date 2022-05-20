@@ -1,7 +1,11 @@
 ManifestFileVersion: 0
-CRC: 3023273566
+CRC: 2477458967
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
       Name: hudautochess
       Dependencies: {}
+    Info_1:
+      Name: genericboardscene
+      Dependencies:
+        Dependency_0: hudautochess

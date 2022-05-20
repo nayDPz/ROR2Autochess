@@ -8,15 +8,16 @@ using UnityEngine.SceneManagement;
 using RORAutochess.AI;
 using RORAutochess.Units;
 using UnityEngine.Networking;
+using System.Collections.ObjectModel;
 
 namespace RORAutochess
 {
-    public class GenericBoard : MonoBehaviour
+    public class ChessBoard : MonoBehaviour
     {
         public const float baseTileWidth = 1.732f;
         public const float baseTileHeight = 2.0f;
 
-        public static List<GenericBoard> instancesList;
+        public static List<ChessBoard> instancesList;
         public static GameObject gridPrefab;
         public static GameObject benchPrefab;
         private static float scale;
@@ -29,6 +30,9 @@ namespace RORAutochess
 
         public GameObject gridInstance;
         public GameObject benchInstance;
+
+        public static NodeGraph nodeGraph;
+
         public Tile[] tiles;
         public Tile[] benchTiles;
         public Vector3 benchPos = new Vector3(0.5f, 0, 3.75f);
@@ -50,17 +54,19 @@ namespace RORAutochess
             SurfaceDef d = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<SurfaceDef>("RoR2/Base/Common/sdStone.asset").WaitForCompletion();
             AutochessPlugin.hud.LoadAsset<GameObject>("Hexagon1").GetComponent<SurfaceDefProvider>().surfaceDef = d;
             AutochessPlugin.hud.LoadAsset<GameObject>("Hexagon2").GetComponent<SurfaceDefProvider>().surfaceDef = d;
-            AutochessPlugin.hud.LoadAsset<GameObject>("Hexagon3").GetComponent<SurfaceDefProvider>().surfaceDef = d; 
+            AutochessPlugin.hud.LoadAsset<GameObject>("Hexagon3").GetComponent<SurfaceDefProvider>().surfaceDef = d;
 
-            GenericBoard.scale = scale;
-            GenericBoard.gap = gap;
+            
+
+            ChessBoard.scale = scale;
+            ChessBoard.gap = gap;
             boardWidth = x;
             boardHeight = y;
 
             gridPrefab = AutochessPlugin.hud.LoadAsset<GameObject>("Grid");
             benchPrefab = AutochessPlugin.hud.LoadAsset<GameObject>("Bench");
 
-            instancesList = new List<GenericBoard>();
+            instancesList = new List<ChessBoard>();
 
             ContentPacks.sceneDefs.Add(sceneDef);
 
@@ -69,7 +75,7 @@ namespace RORAutochess
         }
         private static void SetupPlayers(Stage stage)
         {
-            if (stage.sceneDef == GenericBoard.sceneDef)
+            if (stage.sceneDef == ChessBoard.sceneDef)
             {
                 List<LocalUser> players = LocalUserManager.localUsersList;
                 Vector3 startPos = Vector3.zero;
@@ -77,9 +83,10 @@ namespace RORAutochess
                 {
                     CharacterMaster player = l.cachedMaster;
                     GameObject obj = new GameObject("Board_" + l.userProfile.name); //???????
-                    GenericBoard board = obj.AddComponent<GenericBoard>();
+                    ChessBoard board = obj.AddComponent<ChessBoard>();
                     board.owner = player;
                     player.gameObject.AddComponent<Traits.UnitOwnership>();
+
 
                     //GenericBoard board = new GenericBoard(startPos, GenericBoard.boardWidth, GenericBoard.boardHeight, l.cachedMaster);
 
@@ -108,28 +115,29 @@ namespace RORAutochess
                 Debug.Log(unitData.bodyObject.name);
 
                 master.gameObject.AddComponent<AI.TileNavigator>();
-
-                RoR2.CharacterAI.BaseAI ai = master.GetComponent<RoR2.CharacterAI.BaseAI>();
-                if (ai)
+                if (bodyObject && !bodyObject.GetComponent<Units.UnitPickupInteraction>())
                 {
-                    ai.fullVision = true;
-                    ai.scanState = new EntityStates.SerializableEntityStateType(typeof(BaseTileAIState));
+                    bodyObject.AddComponent<Units.UnitPickupInteraction>();
+                    body.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
+
+                    if (body.characterMotor) body.characterMotor.mass = 10000f;
+                    if (body.rigidbody) body.rigidbody.mass = 10000f;
                 }
 
                 EntityStateMachine m = master.GetComponent<EntityStateMachine>();
                 if (m)
                 {
-                    m.initialStateType = new EntityStates.SerializableEntityStateType(typeof(BaseTileAIState));
-                    m.mainStateType = new EntityStates.SerializableEntityStateType(typeof(BaseTileAIState));
+                    m.initialStateType = new EntityStates.SerializableEntityStateType(typeof(EntityStates.AI.Walker.Guard));
+                    m.mainStateType = new EntityStates.SerializableEntityStateType(typeof(EntityStates.AI.Walker.Guard));
                 }
 
-
-                if (bodyObject && !bodyObject.GetComponent<Units.UnitPickupInteraction>())
+                RoR2.CharacterAI.BaseAI ai = master.GetComponent<RoR2.CharacterAI.BaseAI>();
+                if (ai)
                 {
-                    bodyObject.AddComponent<Units.UnitPickupInteraction>();
-                    body.baseAcceleration = 999;
-                    body.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
+                    ai.fullVision = true;
+                    ai.scanState = new EntityStates.SerializableEntityStateType(typeof(EntityStates.AI.Walker.Guard));
                 }
+
             }
         }
         private static void SetupBoard(Scene scene, LoadSceneMode arg1) // this should probably not exist
@@ -138,10 +146,16 @@ namespace RORAutochess
             {
                 inBoardScene = true;
                 GameObject camera = GameObject.Find("CameraHolder"); // needs to be per board
-                camera.transform.position *= GenericBoard.scale * 2;
+                camera.transform.position *= ChessBoard.scale * 2;
 
                 GameObject si = new GameObject("SceneInfo");
                 SceneInfo info = si.AddComponent<SceneInfo>();
+
+                nodeGraph = GenerateNodegraph(boardWidth, boardHeight, gap, scale);
+                info.groundNodesAsset = nodeGraph;
+                info.groundNodes = nodeGraph;
+                info.airNodesAsset = nodeGraph;
+                info.airNodes = nodeGraph;
 
                 ClassicStageInfo csInfo = si.AddComponent<ClassicStageInfo>();
                 SceneManager.MoveGameObjectToScene(si, scene);
@@ -181,9 +195,10 @@ namespace RORAutochess
 
 
         }
-        public static GenericBoard GetBoardFromMaster(CharacterMaster m)
+
+        public static ChessBoard GetBoardFromMaster(CharacterMaster m)
         {
-            foreach (GenericBoard board in instancesList)
+            foreach (ChessBoard board in instancesList)
             {
                 if (board.owner == m)
                     return board;
@@ -191,21 +206,21 @@ namespace RORAutochess
             return null;
         }
 
-
         private void Awake()
         {
-            gridInstance = GameObject.Instantiate<GameObject>(GenericBoard.gridPrefab, base.transform);
+            gridInstance = GameObject.Instantiate<GameObject>(ChessBoard.gridPrefab, base.transform);
             Board.GridGeneration g = gridInstance.transform.Find("Hexagons").gameObject.GetComponent<Board.GridGeneration>();
-            g.gridWidth = GenericBoard.boardWidth;
-            g.gridHeight = GenericBoard.boardHeight;
+            g.gridWidth = ChessBoard.boardWidth;
+            g.gridHeight = ChessBoard.boardHeight;
             g.gap = gap;
-            g.scale = GenericBoard.scale;
+            g.scale = ChessBoard.scale;
             tiles = GenerateTiles(boardWidth, boardHeight, gap, scale, base.transform.position); // should probably combine tile and hexagon generation ??
 
             benchTiles = GenerateBenchTiles(scale, base.transform.position);
-            benchInstance = GameObject.Instantiate<GameObject>(GenericBoard.benchPrefab, base.transform);
+            benchInstance = GameObject.Instantiate<GameObject>(ChessBoard.benchPrefab, base.transform);
             benchInstance.transform.localPosition = this.benchPos * scale;
-            benchInstance.transform.localScale *= GenericBoard.scale * 2; // WHY 2 WHY 2 WHYYYYYYYYYY
+            benchInstance.transform.localScale *= ChessBoard.scale * 2; // WHY 2 WHY 2 WHYYYYYYYYYY
+
             for (int i = 0; i < tiles.Length; i++)
             {
                 tiles[i].LinkTile();
@@ -214,9 +229,73 @@ namespace RORAutochess
             {
                 tiles[i].CalculateTileDistances();
             }
-            GenericBoard.instancesList.Add(this);
+            ChessBoard.instancesList.Add(this);
         }
 
+        private void Start()
+        {
+            ReadOnlyCollection<NetworkUser> readOnlyInstancesList = NetworkUser.readOnlyInstancesList;
+            BodyIndex bodyIndex = readOnlyInstancesList[0].bodyIndexPreference;
+
+            MasterCatalog.MasterIndex index = MasterCatalog.FindAiMasterIndexForBody(bodyIndex);
+            GameObject master;
+            if (index != MasterCatalog.MasterIndex.none)
+            {
+                master = MasterCatalog.GetMasterPrefab(index);
+            }
+            else
+            {
+                Log.LogError("Survivor preference not found!");
+                master = MasterCatalog.FindMasterPrefab("CommandoBody");
+            }
+
+
+
+            CharacterMaster player = readOnlyInstancesList[0].master;
+
+            GameObject body = player.GetBodyObject();
+            ModelLocator model = body.GetComponent<ModelLocator>();
+            if(model)
+            {
+                model.modelTransform.gameObject.SetActive(false);
+            }
+            player.gameObject.AddComponent<UI.MouseInteractionDriver2>();
+            //body.AddComponent<UI.MouseInteractionDriver>();
+            body.SetActive(false);
+
+            ChessBoard board = this;
+            if (board != null)
+            {
+                ChessBoard.Tile tile = board.GetLowestUnoccupiedTile(board.tiles);
+                if (tile != null)
+                {
+                    CharacterMaster m = new MasterSummon
+                    {
+                        masterPrefab = master,
+                        summonerBodyObject = player.GetBodyObject(),
+                        ignoreTeamMemberLimit = true,
+                        inventoryToCopy = null,
+                        useAmbientLevel = new bool?(true),
+                        position = tile.worldPosition + Vector3.up,
+                        rotation = Quaternion.identity,
+
+                    }.Perform();
+
+                    m.destroyOnBodyDeath = false;
+
+                    m.GetComponent<RoR2.CharacterAI.BaseAI>().enabled = false;
+                    AI.TileNavigator t = m.GetComponent<AI.TileNavigator>();
+
+                    if (!t) // probably shouldnt do this
+                    {
+                        t = m.gameObject.AddComponent<AI.TileNavigator>();
+                    }
+
+                    t.currentBoard = board;
+                    t.SetCurrentTile(tile);
+                }
+            }
+        }
         public void SetUnitPositions()
         {
             this.ownerUnitsOnBoard = new List<UnitData>();
@@ -297,7 +376,8 @@ namespace RORAutochess
             CharacterMaster master = unit.master;
 
             master.Respawn(location, Quaternion.identity);
-            
+            master.GetComponent<RoR2.CharacterAI.BaseAI>().enabled = false;
+
             AI.TileNavigator t = master.GetComponent<AI.TileNavigator>();
             t.currentBoard = this;
             t.SetCurrentTile(this.tiles[unit.tileIndex]);
@@ -331,18 +411,173 @@ namespace RORAutochess
             foreach (UnitData unit in this.ownerUnitsOnBoard)
             {
                 unit.navigator.inCombat = b;
-                unit.master.teamIndex = TeamIndex.Player;
+                if(unit.master)
+                {
+                    unit.master.teamIndex = TeamIndex.Player;
+
+                    RoR2.CharacterAI.BaseAI ai = unit.master.GetComponent<RoR2.CharacterAI.BaseAI>();
+                    if(ai)
+                    {
+                        ai.enabled = b;
+                    }
+                }
+                
             }
             foreach (UnitData unit in this.enemyUnitsOnBoard)
             {
                 unit.navigator.inCombat = b;
-                unit.master.teamIndex = TeamIndex.Monster;
+                if (unit.master)
+                {
+                    unit.master.teamIndex = TeamIndex.Monster;
+
+                    RoR2.CharacterAI.BaseAI ai = unit.master.GetComponent<RoR2.CharacterAI.BaseAI>();
+                    if (ai)
+                    {
+                        ai.enabled = b;
+                    }
+                }
             }
+
         }
         private void OnDestroy()
         {
-            GenericBoard.instancesList.Remove(this);
+            ChessBoard.instancesList.Remove(this);
         }
+
+        private static NodeGraph GenerateNodegraph(int x, int y, float gap, float scale)
+        {
+            float width = baseTileWidth + baseTileWidth * gap;
+            float height = baseTileHeight + baseTileHeight * gap;
+
+            NodeGraph nodeGraph = ScriptableObject.CreateInstance<NodeGraph>();
+            nodeGraph.Clear();
+            nodeGraph.name = "hexboardGroundNodesNodegraph";
+            NodeGraph.Node[] nodes = new NodeGraph.Node[x * y];
+            List<NodeGraph.Link> links = new List<NodeGraph.Link>();
+
+            for (int i = 0; i < y; i++)
+            {
+                for (int k = 0; k < x; k++)
+                {
+                    int index = i * x + k;
+                    float offset = i % 2 != 0 ? width / 2f : 0f;
+                    nodes[index] = new NodeGraph.Node
+                    {
+                        position = new Vector3((width * k + offset), 0.2f, (-height * i * 0.75f)) * scale,
+                    };
+
+                    #region NodeGraph
+                    NodeGraph.NodeIndex nodeIndex = new NodeGraph.NodeIndex { nodeIndex = index };
+                    int debugLinksGenerated = 0;
+
+                    Log.LogInfo("LINKING " + index);
+                    if (k > 0)
+                    {
+                        links.Add(CreateLink(nodeIndex, index - 1));
+
+                    } // behind
+                    if (k < x - 1)
+                    {
+                        links.Add(CreateLink(nodeIndex, index + 1));
+                    } // in front
+                    if (i > 0)
+                    {
+                        if (i % 2 == 0)
+                        {
+                            if (k == 0)
+                            {
+                                links.Add(CreateLink(nodeIndex, index - x));
+                                debugLinksGenerated++;
+                            }
+                            else
+                            {
+                                links.Add(CreateLink(nodeIndex, index - x - 1));
+                                links.Add(CreateLink(nodeIndex, index - x));
+                                debugLinksGenerated += 2;
+                            }
+                        }
+                        else
+                        {
+                            if (k == x - 1)
+                            {
+                                links.Add(CreateLink(nodeIndex, index - x));
+                                debugLinksGenerated++;
+                            }
+                            else
+                            {
+                                links.Add(CreateLink(nodeIndex, index - x));
+                                links.Add(CreateLink(nodeIndex, index - x + 1));
+                                debugLinksGenerated += 2;
+                            }
+                        }
+
+                    } // below
+                    if (i < y - 1)
+                    {
+                        if (i % 2 == 0)
+                        {
+                            if (k == 0)
+                            {
+                                links.Add(CreateLink(nodeIndex, index + x));
+                                debugLinksGenerated++;
+                            }
+                            else
+                            {
+                                links.Add(CreateLink(nodeIndex, index + x - 1));
+                                links.Add(CreateLink(nodeIndex, index + x));
+                                debugLinksGenerated += 2;
+                            }
+                        }
+                        else
+                        {
+                            if (k == x - 1)
+                            {
+                                links.Add(CreateLink(nodeIndex, index + x));
+                                debugLinksGenerated++;
+                            }
+                            else
+                            {
+                                links.Add(CreateLink(nodeIndex, index + x));
+                                links.Add(CreateLink(nodeIndex, index + x + 1));
+                                debugLinksGenerated += 2;
+                            }
+
+                        }
+                    } // above
+
+                    /*
+                    nodes[index].linkListIndex = new NodeGraph.LinkListIndex
+                    {
+                        index = links.Count,
+                        size = (uint)debugLinksGenerated
+                    };   
+                    */
+                    Log.LogDebug("Hex " + k + "|" + i + " generated at position + " + nodes[index].position.ToString() + " with " + debugLinksGenerated + " links.");
+                    #endregion
+                }
+            }
+
+            nodeGraph.nodes = nodes;
+            nodeGraph.links = links.ToArray();
+
+            nodeGraph.OnNodeCountChanged();
+            nodeGraph.RebuildBlockMap();
+
+            return nodeGraph;
+        }
+        private static NodeGraph.Link CreateLink(NodeGraph.NodeIndex indexA, int indexB)
+        {
+            Log.LogDebug(indexA.nodeIndex + " -> " + indexB);
+            return new NodeGraph.Link
+            {
+                nodeIndexA = indexA,
+                nodeIndexB = new NodeGraph.NodeIndex { nodeIndex = indexB },
+                distanceScore = (baseTileWidth + baseTileWidth * ChessBoard.gap) * scale,
+                hullMask = 7,
+            };
+        }
+
+
 
         private Tile[] GenerateBenchTiles(float scale, Vector3 startPos)
         {
@@ -522,7 +757,7 @@ namespace RORAutochess
         public class Tile
         {
             public Dictionary<Tile, int> tileDistances;
-            public GenericBoard board;
+            public ChessBoard board;
             public int index;
             public Vector3 worldPosition;
             public bool occupied;

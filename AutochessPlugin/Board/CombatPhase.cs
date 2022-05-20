@@ -14,7 +14,7 @@ namespace RORAutochess.Board
 
             this.roundController.currentPhaseDuration = this.roundController.combatDuration;
 
-            foreach (GenericBoard board in this.roundController.boards)
+            foreach (ChessBoard board in this.roundController.boards)
             {
                 board.SetCombat(true); 
             }
@@ -25,7 +25,7 @@ namespace RORAutochess.Board
             base.FixedUpdate();
             if (base.fixedAge >= this.roundController.combatDuration)
             {
-                foreach (GenericBoard board in this.roundController.boards)
+                foreach (ChessBoard board in this.roundController.boards)
                 {
                     board.SetCombat(false);
                 }

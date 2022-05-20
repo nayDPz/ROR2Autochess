@@ -7,6 +7,7 @@ using RoR2.Navigation;
 using UnityEngine;
 using UnityEngine.Networking;
 using RoR2.UI;
+using System.Collections.ObjectModel;
 
 namespace RORAutochess
 {
@@ -28,7 +29,7 @@ namespace RORAutochess
 
             SceneCollection sceneCollection = ScriptableObject.CreateInstance<SceneCollection>();
             sceneCollection.name = "sgAutochess";
-            sceneCollection._sceneEntries = (new SceneCollection.SceneEntry[] { new SceneCollection.SceneEntry { sceneDef = GenericBoard.sceneDef } });
+            sceneCollection._sceneEntries = (new SceneCollection.SceneEntry[] { new SceneCollection.SceneEntry { sceneDef = ChessBoard.sceneDef } });
             AutochessRun r = gamemodePrefab.AddComponent<AutochessRun>();
             r.startingSceneGroup = sceneCollection;
             r.nameToken = "GAMEMODE_CHESS_RUN_NAME";
@@ -40,7 +41,7 @@ namespace RORAutochess
             r.uiPrefab = null;
 
             gamemodePrefab.AddComponent<TeamManager>();
-            gamemodePrefab.AddComponent<RunCameraManager>();
+            gamemodePrefab.AddComponent<UI.AutochessRunCameraManager>();
             
             R2API.PrefabAPI.RegisterNetworkPrefab(gamemodePrefab);
 
@@ -53,7 +54,11 @@ namespace RORAutochess
         public override void Start()
         {
             base.Start();
+
             
+
+
+
         }
 
         [SystemInitializer(typeof(GameModeCatalog))]
@@ -61,6 +66,7 @@ namespace RORAutochess
         {
             gamemodePrefab.SetActive(true);
         }
+
         public override bool spawnWithPod
         {
             get
