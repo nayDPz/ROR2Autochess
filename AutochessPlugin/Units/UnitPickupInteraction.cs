@@ -61,38 +61,28 @@ namespace RORAutochess.Units
 
             this.cooldown = 0.05f;
 
-            driver = activator.GetComponent<UI.MouseInteractionDriver2>(); // not necessary
-            if(driver)
+
+            if (!pickedUp)
             {
-                if (!pickedUp)
-                {
-                    pickedUp = true;
-                    driver.interactableOverride = base.gameObject;
-                    if(ChessBoard.inBoardScene)
-                    {
-                        
-                        this.tileNavigator.Pickup();
-                    }
-
+                pickedUp = true;
+                if(ChessBoard.inBoardScene)
+                {                     
+                    this.tileNavigator.Pickup();
                 }
-                else
-                {
-                    pickedUp = false;
-                    driver.interactableOverride = null;
-                    this.PlaceUnit();
 
-                }
             }
             else
             {
-                Log.LogError("InteractionDriver missing, can't pick up Unit");
+                pickedUp = false;
+                this.PlaceUnit();
+
             }
+
         }
 
         private void PlaceUnit()
         {
             pickedUp = false;
-            if (this.driver.interactableOverride) this.driver.interactableOverride = null;
 
             if (ChessBoard.inBoardScene)
             {

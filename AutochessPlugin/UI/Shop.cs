@@ -7,41 +7,38 @@ namespace RORAutochess.UI
 {
     public class Shop : MonoBehaviour
     {
-        public static GameObject slotPrefab;
-        public static GameObject entryPrefab;
-        //needs reroll odds
-
-        public static void Init()
-        {
-            if(!slotPrefab)
-                slotPrefab = AutochessPlugin.hud.LoadAsset<GameObject>("ShopSlot");
-            if(!entryPrefab)
-                entryPrefab = AutochessPlugin.hud.LoadAsset<GameObject>("ShopEntry");
-        }
+        public GameObject slotPrefab;
+        public GameObject entryPrefab;
 
         public CharacterMaster source;
         public ShopSlot[] shopSlots;
         public event Action onShopRefreshed;
 
-        private void Update()
+        private void Update() // need to do a pass over awake/start in these UI components
         {
             foreach (ShopSlot slot in shopSlots)
             {
                 slot.source = this.source;
+                slot.shop = this;
             }
         }
-        private void Awake()
+
+        private void Awake() // this code is fucking worthless and does nothing apparently
         {
             foreach (ShopSlot slot in shopSlots)
             {
                 slot.source = this.source;
+                slot.shop = this;
             }
             this.RefreshShop();
         }
+
         public void RefreshShop()
         {
             foreach (ShopSlot slot in shopSlots)
             {
+                slot.source = this.source;
+                slot.shop = this;
                 slot.RefreshEntry();
             }
             if (onShopRefreshed != null)

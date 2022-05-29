@@ -17,6 +17,9 @@ namespace RORAutochess
         public const float baseTileWidth = 1.732f;
         public const float baseTileHeight = 2.0f;
 
+        public static Vector3 cameraPosition = new Vector3(6.75f, 7.285f, 6.16f);
+        public static Quaternion cameraRotation = Quaternion.Euler(40f, 180f, 0f);
+
         public static List<ChessBoard> instancesList;
         public static GameObject gridPrefab;
         public static GameObject benchPrefab;
@@ -31,7 +34,8 @@ namespace RORAutochess
         public GameObject gridInstance;
         public GameObject benchInstance;
 
-        public static NodeGraph nodeGraph;
+        public static NodeGraph groundNodeGraph;
+        public static NodeGraph airNodeGraph;
 
         public Tile[] tiles;
         public Tile[] benchTiles;
@@ -39,7 +43,7 @@ namespace RORAutochess
 
         public CharacterMaster owner;
         public List<UnitData> ownerUnitsOnBoard = new List<UnitData>();
-        public List<UnitData> enemyUnitsOnBoard = new List<UnitData>();
+        public List<CharacterMaster> enemiesOnBoard = new List<CharacterMaster>();
         private CharacterMaster enemy;
         
         public static void Setup(int x, int y, float gap, float scale)
@@ -75,23 +79,17 @@ namespace RORAutochess
         }
         private static void SetupPlayers(Stage stage)
         {
-            if (stage.sceneDef == ChessBoard.sceneDef)
+            if (AutochessRun.instance)
             {
                 List<LocalUser> players = LocalUserManager.localUsersList;
                 Vector3 startPos = Vector3.zero;
                 foreach (LocalUser l in players)
                 {
                     CharacterMaster player = l.cachedMaster;
-                    GameObject obj = new GameObject("Board_" + l.userProfile.name); //???????
+                    GameObject obj = new GameObject("Board_" + l.userProfile.name);
                     ChessBoard board = obj.AddComponent<ChessBoard>();
                     board.owner = player;
-                    player.gameObject.AddComponent<Traits.UnitOwnership>();
-
-
-                    //GenericBoard board = new GenericBoard(startPos, GenericBoard.boardWidth, GenericBoard.boardHeight, l.cachedMaster);
-
-
-                    //player.bodyPrefab = Player.PlayerBodyObject.bodyPrefab;
+                    
                     startPos.x += 300f;
                 }
 
@@ -99,63 +97,23 @@ namespace RORAutochess
         }
 
 
-        [SystemInitializer(typeof(GameModeCatalog))]
-        private static void SetupTestUnits()
-        {
-            foreach (CharacterMaster master in MasterCatalog.allMasters)
-            {
-
-                Units.UnitData unitData = master.gameObject.AddComponent<Units.UnitData>();
-                GameObject bodyObject = master.bodyPrefab;
-                CharacterBody body = bodyObject.GetComponent<CharacterBody>();
-
-                unitData.master = master;
-                unitData.bodyObject = master.bodyPrefab;
-                unitData.unitName = body.baseNameToken;
-                Debug.Log(unitData.bodyObject.name);
-
-                master.gameObject.AddComponent<AI.TileNavigator>();
-                if (bodyObject && !bodyObject.GetComponent<Units.UnitPickupInteraction>())
-                {
-                    bodyObject.AddComponent<Units.UnitPickupInteraction>();
-                    body.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
-
-                    if (body.characterMotor) body.characterMotor.mass = 10000f;
-                    if (body.rigidbody) body.rigidbody.mass = 10000f;
-                }
-
-                EntityStateMachine m = master.GetComponent<EntityStateMachine>();
-                if (m)
-                {
-                    m.initialStateType = new EntityStates.SerializableEntityStateType(typeof(EntityStates.AI.Walker.Guard));
-                    m.mainStateType = new EntityStates.SerializableEntityStateType(typeof(EntityStates.AI.Walker.Guard));
-                }
-
-                RoR2.CharacterAI.BaseAI ai = master.GetComponent<RoR2.CharacterAI.BaseAI>();
-                if (ai)
-                {
-                    ai.fullVision = true;
-                    ai.scanState = new EntityStates.SerializableEntityStateType(typeof(EntityStates.AI.Walker.Guard));
-                }
-
-            }
-        }
         private static void SetupBoard(Scene scene, LoadSceneMode arg1) // this should probably not exist
         {
             if (scene.name == "genericboardscene")
             {
                 inBoardScene = true;
-                GameObject camera = GameObject.Find("CameraHolder"); // needs to be per board
+                GameObject camera = GameObject.Find("CameraHolder"); 
                 camera.transform.position *= ChessBoard.scale * 2;
 
                 GameObject si = new GameObject("SceneInfo");
                 SceneInfo info = si.AddComponent<SceneInfo>();
 
-                nodeGraph = GenerateNodegraph(boardWidth, boardHeight, gap, scale);
-                info.groundNodesAsset = nodeGraph;
-                info.groundNodes = nodeGraph;
-                info.airNodesAsset = nodeGraph;
-                info.airNodes = nodeGraph;
+                groundNodeGraph = GenerateNodegraph(boardWidth, boardHeight, gap, scale, Vector3.zero);
+
+                info.groundNodesAsset = groundNodeGraph;
+                info.groundNodes = groundNodeGraph;
+                info.airNodesAsset = groundNodeGraph;
+                info.airNodes = groundNodeGraph;
 
                 ClassicStageInfo csInfo = si.AddComponent<ClassicStageInfo>();
                 SceneManager.MoveGameObjectToScene(si, scene);
@@ -165,28 +123,6 @@ namespace RORAutochess
                 SceneManager.MoveGameObjectToScene(ev, scene);
 
                 GameObject.Instantiate<GameObject>(Board.RoundController.prefab);
-
-
-                //GameObject stage = GameObject.Find("Grid(Clone)");
-                //stage.transform.localScale *= GenericBoard.scale * 2;
-                //GameObject floor = stage.transform.Find("Floor").gameObject;
-                //floor.layer = LayerIndex.world.intVal;
-                //floor.AddComponent<SurfaceDefProvider>().surfaceDef = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<SurfaceDef>("RoR2/Base/Common/sdStone.asset").WaitForCompletion();
-
-
-
-
-
-
-                //GameObject lemtest = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Lemurian/LemurianMaster.prefab").WaitForCompletion();
-                //lemtest.GetComponent<EntityStateMachine>().initialStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
-                //lemtest.GetComponent<EntityStateMachine>().mainStateType = new EntityStates.SerializableEntityStateType(typeof(RORAutochess.AI.BaseTileAIState));
-                //GameObject body = lemtest.GetComponent<CharacterMaster>().bodyPrefab;
-                //if(!body.GetComponent<Units.UnitPickupInteraction>())
-                //{
-                //    body.AddComponent<Units.UnitPickupInteraction>();                 
-                //    body.GetComponent<CharacterBody>().baseAcceleration = 999;
-                //}
 
             }
             else
@@ -259,43 +195,155 @@ namespace RORAutochess
             {
                 model.modelTransform.gameObject.SetActive(false);
             }
-            player.gameObject.AddComponent<UI.MouseInteractionDriver2>();
+
+            if(!player.gameObject.GetComponent<UI.MouseInteractionDriver2>())
+                player.gameObject.AddComponent<UI.MouseInteractionDriver2>();
+            if(!player.gameObject.GetComponent<Traits.UnitOwnership>())
+                player.gameObject.AddComponent<Traits.UnitOwnership>();
+
             //body.AddComponent<UI.MouseInteractionDriver>();
             body.SetActive(false);
 
-            ChessBoard board = this;
-            if (board != null)
-            {
-                ChessBoard.Tile tile = board.GetLowestUnoccupiedTile(board.tiles);
-                if (tile != null)
-                {
-                    CharacterMaster m = new MasterSummon
-                    {
-                        masterPrefab = master,
-                        summonerBodyObject = player.GetBodyObject(),
-                        ignoreTeamMemberLimit = true,
-                        inventoryToCopy = null,
-                        useAmbientLevel = new bool?(true),
-                        position = tile.worldPosition + Vector3.up,
-                        rotation = Quaternion.identity,
-
-                    }.Perform();
-
-                    m.destroyOnBodyDeath = false;
-
-                    m.GetComponent<RoR2.CharacterAI.BaseAI>().enabled = false;
-                    AI.TileNavigator t = m.GetComponent<AI.TileNavigator>();
-
-                    if (!t) // probably shouldnt do this
-                    {
-                        t = m.gameObject.AddComponent<AI.TileNavigator>();
-                    }
-
-                    t.currentBoard = board;
-                    t.SetCurrentTile(tile);
-                }
-            }
+            ChessBoard.Tile tile = GetLowestUnoccupiedTile(this.tiles);
+            DeployUnit(master.GetComponent<CharacterMaster>(), tile);
         }
+
+        public void CreatePodShop(Tile tile) // should redo this completely
+        {
+            GameObject pod = GameObject.Instantiate(Stuff.podSpawnPointPrefab, tile.worldPosition + Vector3.up * 2, Quaternion.identity);
+
+
+            GameObject hud = UI.AutochessHUDAddon.FindByMaster(this.owner).gameObject;
+            UICamera uicamera = hud.GetComponent<Canvas>().rootCanvas.worldCamera.GetComponent<UICamera>();
+
+            Camera sceneCam = uicamera.cameraRigController.sceneCam;
+            Camera uiCam = uicamera.camera;
+
+            Vector3 position = pod.transform.position;
+            position.y += 4.5f;
+            Vector3 vector = sceneCam.WorldToScreenPoint(position);
+            Vector3 position2 = uiCam.ScreenToWorldPoint(vector);
+            
+            Transform t = hud.transform.Find("MainContainer");
+            GameObject shop = GameObject.Instantiate(Stuff.podShopPrefab, t);
+            //shop.transform.rotation = Util.QuaternionSafeLookRotation(Camera.main.transform.position - shop.transform.position); //////?
+
+            UI.PodShop ps = shop.GetComponent<UI.PodShop>();
+            ps.source = this.owner;
+            ps.podObject = pod;
+
+            shop.transform.position = position2;
+        }
+
+        public void SetupUnit(CharacterMaster m)
+        {
+            Units.UnitData unitData = m.gameObject.AddComponent<Units.UnitData>();
+            GameObject bodyObject = m.GetBodyObject();
+            CharacterBody body = bodyObject.GetComponent<CharacterBody>();
+            unitData.master = m;
+            unitData.bodyObject = m.bodyPrefab;
+            unitData.unitName = body.baseNameToken;
+            m.gameObject.AddComponent<AI.TileNavigator>();
+            EntityStateMachine mac = m.GetComponent<EntityStateMachine>();
+            if (mac)
+            {
+                mac.initialStateType = new EntityStates.SerializableEntityStateType(typeof(EntityStates.AI.Walker.Guard));
+                mac.mainStateType = new EntityStates.SerializableEntityStateType(typeof(EntityStates.AI.Walker.Guard));
+            }
+            RoR2.CharacterAI.BaseAI ai = m.GetComponent<RoR2.CharacterAI.BaseAI>();
+            if (ai)
+            {
+                ai.fullVision = true;
+                ai.scanState = new EntityStates.SerializableEntityStateType(typeof(EntityStates.AI.Walker.Guard));
+            }
+
+            this.SetupBody(bodyObject);
+        }
+
+        public void SetupBody(GameObject bodyObject)
+        {
+            CharacterBody body = bodyObject.GetComponent<CharacterBody>();
+            bodyObject.AddComponent<Units.UnitPickupInteraction>();
+            body.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
+
+            if (body.characterMotor) body.characterMotor.mass = 10000f;
+            if (body.rigidbody) body.rigidbody.mass = 10000f;
+        }
+
+        public void DeployUnit(CharacterMaster master, Tile tile)
+        {
+            if(tile == null) tile = GetLowestUnoccupiedTile(this.tiles);                      
+            if (tile != null)
+            {
+                CharacterMaster m = new MasterSummon
+                {
+                    masterPrefab = master.gameObject,
+                    summonerBodyObject = this.owner.GetBodyObject(), // ?????
+                    ignoreTeamMemberLimit = true,
+                    inventoryToCopy = null,
+                    useAmbientLevel = new bool?(true),
+                    position = tile.worldPosition,
+                    rotation = Quaternion.identity,
+
+                }.Perform();
+
+                CharacterBody body = m.GetBody();
+
+                if (body.preferredPodPrefab)
+                {
+                    // maybe do rotation
+                    GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(body.preferredPodPrefab, body.transform.position, Quaternion.identity);
+                    VehicleSeat component = gameObject.GetComponent<VehicleSeat>();
+                    
+
+                    gameObject.AddComponent<Board.AutoOpenPod>();
+                    if (component)
+                    {
+                        component.onPassengerExit += (GameObject bodyObject) =>
+                        {
+                            HealthComponent h = bodyObject.GetComponent<HealthComponent>();
+                            if (h)
+                            {
+                                foreach (UI.AllyHealthBarViewer combatHealthBarViewer in UI.AllyHealthBarViewer.instancesList)
+                                {
+                                    if (body.teamComponent.teamIndex == combatHealthBarViewer.viewerTeamIndex)
+                                    {
+                                        combatHealthBarViewer.AddHealthBarInfo(body.healthComponent);
+                                    }
+                                }
+                            }
+
+                        };
+                        
+                        component.AssignPassenger(body.gameObject);
+                    }
+                    NetworkServer.Spawn(gameObject);
+                }
+                else
+                {
+                    foreach (UI.AllyHealthBarViewer combatHealthBarViewer in UI.AllyHealthBarViewer.instancesList) ///////
+                    {
+                        if (body.teamComponent.teamIndex == combatHealthBarViewer.viewerTeamIndex)
+                        {
+                            combatHealthBarViewer.AddHealthBarInfo(body.healthComponent);
+                        }
+                    }
+                }
+
+                SetupUnit(m);
+
+                m.destroyOnBodyDeath = false;
+
+                AI.TileNavigator t = m.GetComponent<AI.TileNavigator>();
+
+                t.currentBoard = this;
+                t.SetCurrentTile(tile);
+            }
+            
+        }
+
+
+
         public void SetUnitPositions()
         {
             this.ownerUnitsOnBoard = new List<UnitData>();
@@ -306,21 +354,25 @@ namespace RORAutochess
                 if(o)
                 {
                     UnitData data = o.gameObject.GetComponent<UnitData>();
-                    data.navigator.inCombat = false;
-                    if (!data.navigator.benched)
+                    if(data && data.navigator) // shouldnt null check, game will break anyways
                     {
-                        data.tileIndex = data.navigator.currentTile.index;
-                        this.ownerUnitsOnBoard.Add(data);
+                        data.navigator.inCombat = false;
+                        if (!data.navigator.benched)
+                        {
+                            data.tileIndex = data.navigator.currentTile.index;
+                            this.ownerUnitsOnBoard.Add(data);
+                        }
                     }
+                    
                 }
                               
             }
         }
 
         public static int testPveRoundEnemies = 9;
-        public List<UnitData> CreatePVERound() // giga testing. could do director stuff here?
+        public List<CharacterMaster> CreatePVERound() // giga testing. could do director stuff here?
         {
-            var enemyUnits = new List<UnitData>(); 
+            var enemyUnits = new List<CharacterMaster>(); 
             var masters = new GameObject[testPveRoundEnemies];
 
             var choices = new GameObject[]{ MasterCatalog.FindMasterPrefab("LemurianMaster"), MasterCatalog.FindMasterPrefab("GolemMaster"), MasterCatalog.FindMasterPrefab("BeetleMaster") };
@@ -336,12 +388,9 @@ namespace RORAutochess
                 master.bodyPrefab = body;
                 master.teamIndex = TeamIndex.Monster;
 
-                enemyUnits.Add(masters[i].GetComponent<UnitData>());
-            }
+                
 
-            foreach(UnitData data in enemyUnits)
-            {
-                data.tileIndex = UnityEngine.Random.RandomRangeInt(0, (this.tiles.Length / 2)-1);
+                enemyUnits.Add(master);
             }
             return enemyUnits;
 
@@ -355,12 +404,12 @@ namespace RORAutochess
                 tiles[i].occupied = false;
             }
 
-            foreach (UnitData unit in this.enemyUnitsOnBoard)
+            foreach (CharacterMaster unit in this.enemiesOnBoard)
             {
-                if(unit && unit.master)
-                    unit.master.TrueKill(); // FOR TESTING
+                if(unit)
+                    unit.TrueKill(); // FOR TESTING
             }
-            this.enemyUnitsOnBoard.Clear();
+            this.enemiesOnBoard.Clear();
             foreach(UnitData unit in this.ownerUnitsOnBoard)
             {
                 unit.navigator.inCombat = false;
@@ -375,32 +424,24 @@ namespace RORAutochess
 
             CharacterMaster master = unit.master;
 
-            master.Respawn(location, Quaternion.identity);
-            master.GetComponent<RoR2.CharacterAI.BaseAI>().enabled = false;
+            SetupBody(master.Respawn(location, Quaternion.identity).gameObject);
 
             AI.TileNavigator t = master.GetComponent<AI.TileNavigator>();
             t.currentBoard = this;
             t.SetCurrentTile(this.tiles[unit.tileIndex]);
         }
 
-        public void CreateEnemyTeam(List<UnitData> enemyUnits, CharacterMaster enemyPlayer)
+        public void CreateEnemyTeam(List<CharacterMaster> enemyUnits)
         {
-            this.enemyUnitsOnBoard = new List<UnitData>();
-            foreach (UnitData unit in enemyUnits)
+            this.enemiesOnBoard = new List<CharacterMaster>();
+            foreach (CharacterMaster master in enemyUnits)
             {
-
-                int i = (this.tiles.Length - 1) - unit.tileIndex;
-                Vector3 location = this.tiles[i].worldPosition;
-
-                CharacterMaster master = unit.master;
-
+                int i = UnityEngine.Random.RandomRangeInt(0, (this.tiles.Length / 2) - 1);
+                int k = (this.tiles.Length - 1) - i;
+                Vector3 location = this.tiles[k].worldPosition;
                 master.Respawn(location, Quaternion.identity);
 
-                AI.TileNavigator t = master.GetComponent<AI.TileNavigator>();
-                t.currentBoard = this;
-                t.SetCurrentTile(this.tiles[i]);
-
-                this.enemyUnitsOnBoard.Add(unit);
+                this.enemiesOnBoard.Add(master);
             }
 
 
@@ -423,19 +464,18 @@ namespace RORAutochess
                 }
                 
             }
-            foreach (UnitData unit in this.enemyUnitsOnBoard)
+            foreach (CharacterMaster unit in this.enemiesOnBoard)
             {
-                unit.navigator.inCombat = b;
-                if (unit.master)
+                if(unit)
                 {
-                    unit.master.teamIndex = TeamIndex.Monster;
+                    unit.teamIndex = TeamIndex.Monster;
 
-                    RoR2.CharacterAI.BaseAI ai = unit.master.GetComponent<RoR2.CharacterAI.BaseAI>();
+                    RoR2.CharacterAI.BaseAI ai = unit.GetComponent<RoR2.CharacterAI.BaseAI>();
                     if (ai)
                     {
                         ai.enabled = b;
                     }
-                }
+                }                           
             }
 
         }
@@ -444,7 +484,7 @@ namespace RORAutochess
             ChessBoard.instancesList.Remove(this);
         }
 
-        private static NodeGraph GenerateNodegraph(int x, int y, float gap, float scale)
+        private static NodeGraph GenerateNodegraph(int x, int y, float gap, float scale, Vector3 startPos)
         {
             float width = baseTileWidth + baseTileWidth * gap;
             float height = baseTileHeight + baseTileHeight * gap;
@@ -455,7 +495,7 @@ namespace RORAutochess
             NodeGraph.Node[] nodes = new NodeGraph.Node[x * y];
             List<NodeGraph.Link> links = new List<NodeGraph.Link>();
 
-            for (int i = 0; i < y; i++)
+            for (int i = 0; i < y; i++) // generate nodes
             {
                 for (int k = 0; k < x; k++)
                 {
@@ -463,7 +503,7 @@ namespace RORAutochess
                     float offset = i % 2 != 0 ? width / 2f : 0f;
                     nodes[index] = new NodeGraph.Node
                     {
-                        position = new Vector3((width * k + offset), 0.2f, (-height * i * 0.75f)) * scale,
+                        position = new Vector3((width * k + offset), 0.2f, (-height * i * 0.75f)) * scale + startPos,
                     };
 
                     #region NodeGraph
@@ -545,13 +585,6 @@ namespace RORAutochess
                         }
                     } // above
 
-                    /*
-                    nodes[index].linkListIndex = new NodeGraph.LinkListIndex
-                    {
-                        index = links.Count,
-                        size = (uint)debugLinksGenerated
-                    };   
-                    */
                     Log.LogDebug("Hex " + k + "|" + i + " generated at position + " + nodes[index].position.ToString() + " with " + debugLinksGenerated + " links.");
                     #endregion
                 }
@@ -565,6 +598,7 @@ namespace RORAutochess
 
             return nodeGraph;
         }
+
         private static NodeGraph.Link CreateLink(NodeGraph.NodeIndex indexA, int indexB)
         {
             Log.LogDebug(indexA.nodeIndex + " -> " + indexB);

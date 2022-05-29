@@ -12,7 +12,7 @@ namespace RORAutochess.Board
             this.roundController.currentPhaseDuration = this.roundController.preCombatDuration;
             foreach (ChessBoard board in this.roundController.boards)
             {
-                board.CreateEnemyTeam(board.CreatePVERound(), null); // for testing
+                board.CreateEnemyTeam(board.CreatePVERound()); // for testing
             }
         }
 

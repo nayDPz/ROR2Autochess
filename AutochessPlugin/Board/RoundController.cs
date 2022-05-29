@@ -43,5 +43,13 @@ namespace RORAutochess.Board
 
             this.boards = ChessBoard.instancesList;
         }
+
+
+        public class Stage
+        {
+            Color boardColor;
+            DccsPool monsterPool;
+            DccsPool interactablePool;
+        }
     }
 }

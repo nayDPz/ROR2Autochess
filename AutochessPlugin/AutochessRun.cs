@@ -51,6 +51,19 @@ namespace RORAutochess
             
         }
 
+        public override void AdvanceStage(SceneDef nextScene)
+        {
+            if (Stage.instance)
+            {
+                Stage.instance.CompleteServer();
+                if (SceneCatalog.GetSceneDefForCurrentScene().sceneType == SceneType.Stage)
+                {
+                    this.NetworkstageClearCount = this.stageClearCount + 1;
+                }
+            }
+            this.GenerateStageRNG();
+            this.RecalculateDifficultyCoefficent();
+        }
         public override void Start()
         {
             base.Start();

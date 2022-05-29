@@ -58,7 +58,6 @@ namespace RORAutochess.UI
             ItemIcon icon = base.GetComponent<ItemIcon>();
             stack = icon.itemCount;
             index = icon.itemIndex;
-            Chat.AddMessage(index.ToString());
             from.inventory.RemoveItem(index, stack);
             to.inventory.GiveItem(index, stack);
         }
@@ -82,7 +81,7 @@ namespace RORAutochess.UI
                 this.selected = true;
 
 
-                base.transform.SetParent(GameObject.Find("HUDAutochess(Clone)").transform.Find("MainContainer"));
+                base.transform.SetParent(GameObject.Find("HUDAutochess(Clone)").transform.Find("MainContainer")); // ???
 
 
 
@@ -118,32 +117,30 @@ namespace RORAutochess.UI
                 this.selected = false;
                 base.transform.SetParent(this.baseParent);
                 base.transform.parent.gameObject.GetComponent<ItemInventoryDisplay>().OnIconScaleChanged(); // resets back to position, nothing else seemed to work
-                GameObject body = this.master.GetBodyObject();
-                if (body)
+
+                MouseInteractionDriver2 d = this.master.GetComponent<MouseInteractionDriver2>();
+                if (d)
                 {
-                    InteractionDriver d = body.GetComponent<InteractionDriver>();
-                    if (d)
+                    GameObject target = d.FindBestInteractableObject();
+                    if (target)
                     {
-                        GameObject target = d.FindBestInteractableObject();
-                        if (target)
+                        CharacterBody targetBody = target.GetComponent<CharacterBody>();
+                        if (targetBody)
                         {
-                            CharacterBody targetBody = target.GetComponent<CharacterBody>();
-                            if (targetBody)
+                            GameObject master = targetBody.masterObject;
+                            MinionOwnership mo = master.GetComponent<MinionOwnership>();
+                            if (mo)
                             {
-                                GameObject master = targetBody.masterObject;
-                                MinionOwnership mo = master.GetComponent<MinionOwnership>();
-                                if (mo)
+                                if (mo.group == MinionOwnership.MinionGroup.FindGroup(this.master.netId))
                                 {
-                                    if (mo.group == MinionOwnership.MinionGroup.FindGroup(this.master.netId))
-                                    {
-                                        this.ExchangeItem(this.master, master.GetComponent<CharacterMaster>());
-                                    }
+                                    this.ExchangeItem(this.master, master.GetComponent<CharacterMaster>());
                                 }
                             }
                         }
-
                     }
+
                 }
+                
 
             }
         }

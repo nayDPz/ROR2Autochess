@@ -80,8 +80,7 @@ namespace RORAutochess
             AutochessRun.CreatePrefab();
             Board.RoundController.Init();
             UI.InventoryClickDrag.Init();
-            UI.Shop.Init();
-
+            Stuff.LoadStuff();
 
 
             On.RoR2.UI.MainMenu.MainMenuController.Start += MainMenuController_Start;
@@ -94,7 +93,7 @@ namespace RORAutochess
 
         private void CameraRigController_Start(On.RoR2.CameraRigController.orig_Start orig, CameraRigController self) 
         {
-            if(ChessBoard.inBoardScene) // gamemode check
+            if(ChessBoard.inBoardScene) // gamemode check ?
             {
                 if (self.createHud)
                 {

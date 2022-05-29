@@ -6,6 +6,19 @@ namespace RORAutochess.Board
 {
     class PrepPhase : RoundBaseState
     {
+        public override void OnEnter()
+        {
+            base.OnEnter();
+            foreach (ChessBoard board in this.roundController.boards)
+            {
+                int i = UnityEngine.Random.RandomRangeInt(0, board.tiles.Length / 2); // bad bad
+
+                while (board.tiles[i].occupied)
+                    i++;
+
+                board.CreatePodShop(board.tiles[i]);
+            }
+        }
         public override void FixedUpdate()
         {
             base.FixedUpdate();
@@ -15,6 +28,7 @@ namespace RORAutochess.Board
                 foreach (ChessBoard board in this.roundController.boards)
                 {
                     board.SetUnitPositions();
+
                 }
                 this.outer.SetNextState(new PreCombatPhase());
             }

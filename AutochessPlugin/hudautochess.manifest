@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 3160728775
+CRC: 970507933
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 63f63f05aa7f75255fff17192c45d274
+    Hash: fe6fd2014b3b33650fc39c71ab1f51ae
   TypeTreeHash:
     serializedVersion: 2
-    Hash: c37e7632251d7ee64c20b3c6d35a8342
+    Hash: 67833fc9ecf7494dc20fc25fca86f72e
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -54,9 +54,11 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 1052602003, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
 - Class: 114
+  Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: 86710e43de46f6f4bac7c8e50813a599, type: 3}
 - Class: 114
-  Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  Script: {fileID: 866789372, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
 - Class: 114
@@ -180,6 +182,8 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 1295853813, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
 - Class: 114
+  Script: {fileID: -388398028, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
+- Class: 114
   Script: {fileID: 747144788, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
 - Class: 114
   Script: {fileID: -1474066389, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
@@ -187,6 +191,8 @@ ClassTypes:
   Script: {fileID: 655009850, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
 - Class: 114
   Script: {fileID: -1077643037, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
+- Class: 114
+  Script: {fileID: -1409820323, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
 - Class: 114
   Script: {fileID: -642389687, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
 - Class: 114
@@ -199,6 +205,8 @@ ClassTypes:
   Script: {fileID: -507390114, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
 - Class: 114
   Script: {fileID: 1638658873, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
+- Class: 114
+  Script: {fileID: 145991676, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
 - Class: 114
   Script: {fileID: -667331979, guid: 67dfb1fdfb2b3072a2eda8e23ac8b724, type: 3}
 - Class: 115
@@ -219,9 +227,12 @@ Assets:
 - Assets/OldStuff/Grid.prefab
 - Assets/OldStuff/Bench.prefab
 - Assets/HUDAutochess.prefab
+- Assets/PodSpawnPoint.prefab
 - Assets/OldStuff/Hexagon2.prefab
+- Assets/ChessHealthbar.prefab
 - Assets/ShopSlot.prefab
 - Assets/RoundController.prefab
 - Assets/OldStuff/Hexagon3.prefab
+- Assets/PodShop.prefab
 - Assets/OldStuff/Hexagon1.prefab
 Dependencies: []

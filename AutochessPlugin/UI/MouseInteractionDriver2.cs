@@ -59,7 +59,7 @@ namespace RORAutochess.UI
 			float num = 0f;
 			Ray originalAimRay = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
 
-			RaycastHit[] hits = Physics.SphereCastAll(originalAimRay.origin, 5f, originalAimRay.direction, 1000f, LayerIndex.world.intVal, QueryTriggerInteraction.Collide);
+			RaycastHit[] hits = Physics.SphereCastAll(originalAimRay.origin, 5f, originalAimRay.direction, 1000f, LayerIndex.CommonMasks.interactable | LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Collide);
 
 			float d = Mathf.Infinity;
 			GameObject best = null;
@@ -69,8 +69,8 @@ namespace RORAutochess.UI
 				GameObject entity2 = EntityLocator.GetEntity(collider.gameObject);
 				if (entity2)
 				{
-					IInteractable component2 = entity2.GetComponent<IInteractable>();
-					if (component2 != null && ((MonoBehaviour)component2).isActiveAndEnabled && component2.GetInteractability(this.interactor) != Interactability.Disabled)
+					UnitPickupInteraction component2 = entity2.GetComponent<UnitPickupInteraction>();
+					if (component2 != null && component2.GetInteractability(this.master) != Interactability.Disabled)
 					{
 						Physics.Raycast(originalAimRay, out RaycastHit hit, 1000f, LayerIndex.world.intVal);
 						float num3 = (collider.transform.position - hit.point).magnitude;
@@ -103,12 +103,12 @@ namespace RORAutochess.UI
 			{
 				return;
 			}
-			GameObject target = outlineHighlight.sceneCamera.cameraRigController.target;
+			CharacterBody target = outlineHighlight.sceneCamera.cameraRigController.targetBody;
 			if (!target)
 			{
 				return;
 			}
-			MouseInteractionDriver2 component = target.GetComponent<MouseInteractionDriver2>();
+			MouseInteractionDriver2 component = target.master.GetComponent<MouseInteractionDriver2>();
 			if (!component)
 			{
 				return;

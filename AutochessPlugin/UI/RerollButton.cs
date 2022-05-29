@@ -11,7 +11,7 @@ using RoR2;
 
 namespace RORAutochess.UI
 {
-    class RerollButton : MonoBehaviour
+    public class RerollButton : MonoBehaviour
     {
         public HGButton button;
         public float cost = 25f;
@@ -22,13 +22,16 @@ namespace RORAutochess.UI
         private void Awake()
         {
             button.onClick = new Button.ButtonClickedEvent();
-            button.onClick.AddListener(new UnityAction(OnButtonClicked));
+            button.onClick.AddListener(new UnityAction(OnRerollClicked));
             if (costText) costText.text = this.cost.ToString();
         }
 
         private void Update()
         {
-            if(this.button && this.source) // check money
+            if(this.shop)
+                this.source = shop.source;
+
+            if(this.button) // check money
             {
                 button.interactable = true;
             }
@@ -37,7 +40,7 @@ namespace RORAutochess.UI
                 button.interactable = false;
             }
         }
-        private void OnButtonClicked()
+        private void OnRerollClicked() // spend money
         {
             shop.RefreshShop();
 

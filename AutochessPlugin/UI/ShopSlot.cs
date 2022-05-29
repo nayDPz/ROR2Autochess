@@ -6,34 +6,35 @@ using RoR2;
 using System.Linq;
 namespace RORAutochess.UI
 {
-    public class ShopSlot : MonoBehaviour
+    public class ShopSlot : MonoBehaviour //sometimes feels like this shouldnt exist
     {
         public GameObject shopEntryInstance;
         public ShopEntry shopEntry;
         public CharacterMaster source;
-
+        public Shop shop;
 
         public void RefreshEntry() 
         {
-            List<GameObject> masters = MasterCatalog.masterPrefabs.Where(x => x.GetComponent<Units.UnitData>() != null && x.GetComponent<Units.UnitData>().master != null).ToList();
-            int i = UnityEngine.Random.Range(0, masters.Count - 1); // rng goes here
+            List<SurvivorDef> d = SurvivorCatalog.allSurvivorDefs.ToList();
+
+            List<GameObject> masters = new List<GameObject>();
+            foreach(SurvivorDef def in d)
+            {
+                masters.Add(MasterCatalog.GetMasterPrefab(MasterCatalog.FindAiMasterIndexForBody(def.bodyPrefab.GetComponent<CharacterBody>().bodyIndex)));
+            }
+
+            int i = UnityEngine.Random.Range(0, masters.Count); // rng goes here
             CharacterMaster master = masters[i].GetComponent<CharacterMaster>();
 
             if (shopEntryInstance) GameObject.Destroy(shopEntryInstance);
 
-            shopEntryInstance = GameObject.Instantiate<GameObject>(Shop.entryPrefab, base.transform);
+            shopEntryInstance = GameObject.Instantiate<GameObject>(shop.entryPrefab, base.transform);
+
 
             shopEntry = shopEntryInstance.GetComponent<ShopEntry>();
+            shopEntry.slot = this; // what the fuck is going on whyyyyyyyyyyyyyyyy
             shopEntry.source = this.source;
-
-            Units.UnitData unitData = master.gameObject.GetComponent<Units.UnitData>();
-
-            if (!unitData) // maybe shouldnt do this lol
-            {
-                unitData = master.gameObject.AddComponent<Units.UnitData>();               
-            }
-
-            shopEntry.unitData = unitData;
+            shopEntry.unitMaster = master;
         }
     }
 }

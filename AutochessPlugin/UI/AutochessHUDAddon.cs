@@ -9,26 +9,52 @@ namespace RORAutochess.UI
 {
     class AutochessHUDAddon : MonoBehaviour
     {
+        public static List<AutochessHUDAddon> instances = new List<AutochessHUDAddon>();
         public Shop shop;
         public RerollButton rerollButton;
         public BuyXPButton xpButton;
         public EXPPanel xpPanel;
         public CharacterMaster targetMaster;
+        public AllyHealthBarViewer allyHealthBarViewer;
 
+        public HUD hud;
 
+        public static AutochessHUDAddon FindByMaster(CharacterMaster m)
+        {
+            foreach(AutochessHUDAddon i in instances)
+            {
+                if (i.targetMaster == m)
+                    return i;
+            }
+            return null;
+        }
+
+        private void OnEnable()
+        {
+            instances.Add(this);
+        }
+        private void OnDisable()
+        {
+            instances.Remove(this);
+        }
         private void Start()
         {
-            this.targetMaster = base.GetComponent<HUD>().targetMaster;
+            this.hud = base.GetComponent<HUD>();
+            this.targetMaster = this.hud.targetMaster;
 
 
         }
         public void Update()
         {
-            if (!this.targetMaster)
+
+            this.targetMaster = this.hud.targetMaster;
+            
+            if (this.allyHealthBarViewer)
             {
-                this.targetMaster = base.GetComponent<HUD>().targetMaster;
+                this.allyHealthBarViewer.source = this.targetMaster;
+                this.allyHealthBarViewer.viewerTeamIndex = this.targetMaster.teamIndex;
             }
-            if(this.xpPanel)
+            if (this.xpPanel)
             {
                 this.xpPanel.source = this.targetMaster;
             }
