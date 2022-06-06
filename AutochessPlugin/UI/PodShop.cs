@@ -8,11 +8,12 @@ using UnityEngine.Events;
 
 namespace RORAutochess.UI
 {
-    public class PodShop : Shop
+    public class PodShop : Shop, ILayoutController
     {
         public GameObject podObject;
         public GameObject flashPanel;
         public RerollButton rerollButton;
+        public UICamera uiCamera;
 
         private void OnDestroy()
         {
@@ -31,6 +32,27 @@ namespace RORAutochess.UI
             this.flashPanel.SetActive(true);
         }
 
+        public void SetLayoutHorizontal()
+        {
+            if (!podObject)
+                return;
 
+            Camera uiCam = uiCamera.camera;
+            Camera sceneCam = uiCamera.cameraRigController.sceneCam;
+            if (sceneCam && uiCam)
+            {
+
+                Vector3 position = podObject.transform.position;
+                position.y += 4.5f;
+                Vector3 vector = sceneCam.WorldToScreenPoint(position);
+                Vector3 position2 = uiCam.ScreenToWorldPoint(vector);
+
+                base.transform.position = position2;
+            }
+        }
+
+        public void SetLayoutVertical()
+        {
+        }
     }
 }

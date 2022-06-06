@@ -41,7 +41,6 @@ namespace RORAutochess
 
 
         public static PluginInfo PInfo { get; private set; }
-        internal static AssetBundle scene;
         internal static AssetBundle assets;
         internal static AssetBundle hud;
 
@@ -52,14 +51,6 @@ namespace RORAutochess
 
             On.RoR2.Networking.NetworkManagerSystemSteam.OnClientConnect += (s, u, t) => { };
 
-
-            if (scene == null)
-            {
-                using (var assetStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("RORAutochess.genericboardscene"))
-                {
-                    scene = AssetBundle.LoadFromStream(assetStream);
-                }           
-            }
             if (assets == null)
             {
                 using (var assetStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("RORAutochess.chessassets"))
@@ -93,7 +84,7 @@ namespace RORAutochess
 
         private void CameraRigController_Start(On.RoR2.CameraRigController.orig_Start orig, CameraRigController self) 
         {
-            if(ChessBoard.inBoardScene) // gamemode check ?
+            if(AutochessRun.instance)
             {
                 if (self.createHud)
                 {

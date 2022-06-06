@@ -33,7 +33,7 @@ namespace RORAutochess.UI
 
         private static void CharacterBody_onBodyStartGlobal(CharacterBody body)
         {
-			if(ChessBoard.inBoardScene)
+			if(AutochessRun.instance)
             {
 				foreach (AllyHealthBarViewer combatHealthBarViewer in AllyHealthBarViewer.instancesList)
 				{

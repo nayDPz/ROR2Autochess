@@ -10,7 +10,7 @@ using RORAutochess.AI;
 namespace RORAutochess.Units
 {
     [RequireComponent(typeof(Highlight), typeof(EntityLocator))]
-    class UnitPickupInteraction : MonoBehaviour // SHOULD PROBABLY MAKE THIS A HEX INTERACTION INSTEAD OF UNIT
+    class UnitPickupInteraction : MonoBehaviour
     {
         private bool pickedUp;
 
@@ -65,7 +65,7 @@ namespace RORAutochess.Units
             if (!pickedUp)
             {
                 pickedUp = true;
-                if(ChessBoard.inBoardScene)
+                if(AutochessRun.instance)
                 {                     
                     this.tileNavigator.Pickup();
                 }
@@ -84,7 +84,7 @@ namespace RORAutochess.Units
         {
             pickedUp = false;
 
-            if (ChessBoard.inBoardScene)
+            if (AutochessRun.instance)
             {
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
                 Physics.Raycast(ray, out RaycastHit hit, 1000f);

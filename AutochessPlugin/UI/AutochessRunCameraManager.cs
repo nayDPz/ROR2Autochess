@@ -51,6 +51,13 @@ namespace RORAutochess.UI
 					{
 						cameraRigController = UnityEngine.Object.Instantiate<GameObject>(LegacyResourcesAPI.Load<GameObject>("Prefabs/Main Camera")).GetComponent<CameraRigController>();
 						this.cameras[num] = cameraRigController;
+
+						Transform sc = cameraRigController.gameObject.transform.Find("Scene Camera");
+						//if(sc) // idk what this is
+      //                  {
+						//	RoR2.PostProcessing.VisionLimitEffect v = sc.gameObject.GetComponent<RoR2.PostProcessing.VisionLimitEffect>();
+						//	if (v) Destroy(v);
+      //                  }
 					}
 					cameraRigController.viewer = networkUser;
 					networkUser.cameraRigController = cameraRigController;

@@ -48,7 +48,8 @@ namespace RORAutochess.UI
         {
 
             this.targetMaster = this.hud.targetMaster;
-            
+            if (!this.targetMaster) return;
+
             if (this.allyHealthBarViewer)
             {
                 this.allyHealthBarViewer.source = this.targetMaster;

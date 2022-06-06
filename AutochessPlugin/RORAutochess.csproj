@@ -18,13 +18,11 @@
 
   <ItemGroup>
     <None Remove="chessassets" />
-    <None Remove="genericboardscene" />
     <None Remove="hudautochess" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="chessassets" />
-    <EmbeddedResource Include="genericboardscene" />
     <EmbeddedResource Include="hudautochess" />
   </ItemGroup>
 

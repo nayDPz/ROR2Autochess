@@ -40,8 +40,7 @@ namespace RORAutochess.UI
 			float fov = context.cameraInfo.baseFov;
 			if (!this.cameraTransform)
 			{
-				GameObject g = GameObject.Find("CameraHolder");
-				if (g) this.cameraTransform = g.transform;
+				this.cameraTransform = ChessBoard.cameraTransform;
 			}
 			if(!this.cameraTransform)
             {

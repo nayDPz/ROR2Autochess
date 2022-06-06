@@ -54,24 +54,6 @@ namespace RORAutochess.AI
             this.currentTile = tile;
             this.currentTile.occupied = true;
             bool bench = false;
-
-            for(int i = 0; i < currentBoard.benchTiles.Length; i++) // probably bad
-            {
-                if (tile == currentBoard.benchTiles[i])
-                {
-                    bench = true;
-                    break;
-                }              
-            }
-
-            if(!bench && this.benched)
-            {
-                this.Unbench();
-            }
-            else if(bench && !this.benched)
-            {
-                this.Bench();
-            }
             
         }
         

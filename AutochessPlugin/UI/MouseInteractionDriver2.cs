@@ -20,6 +20,7 @@ namespace RORAutochess.UI
 		{
 			this.networkIdentity = base.GetComponent<NetworkIdentity>();
 			this.master = base.GetComponent<CharacterMaster>();
+			this.interactor = base.GetComponent<Interactor>();
 		}
 
 		 

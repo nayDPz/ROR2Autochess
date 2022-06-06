@@ -27,12 +27,10 @@ namespace RORAutochess
             Log.LogInfo("Prefab");
             gamemodePrefab = AutochessPlugin.assets.LoadAsset<GameObject>("CustomRun");
 
-            SceneCollection sceneCollection = ScriptableObject.CreateInstance<SceneCollection>();
-            sceneCollection.name = "sgAutochess";
-            sceneCollection._sceneEntries = (new SceneCollection.SceneEntry[] { new SceneCollection.SceneEntry { sceneDef = ChessBoard.sceneDef } });
+            SceneCollection sceneCollection = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<SceneCollection>("RoR2/Base/SceneGroups/sgStage1.asset").WaitForCompletion();
             AutochessRun r = gamemodePrefab.AddComponent<AutochessRun>();
             r.startingSceneGroup = sceneCollection;
-            r.nameToken = "GAMEMODE_CHESS_RUN_NAME";
+            r.nameToken = "GAMEMODE_AUTOCHESS_RUN_NAME";
             r.lobbyBackgroundPrefab = cr.lobbyBackgroundPrefab;
             r.gameOverPrefab = cr.gameOverPrefab;
 
@@ -51,28 +49,7 @@ namespace RORAutochess
             
         }
 
-        public override void AdvanceStage(SceneDef nextScene)
-        {
-            if (Stage.instance)
-            {
-                Stage.instance.CompleteServer();
-                if (SceneCatalog.GetSceneDefForCurrentScene().sceneType == SceneType.Stage)
-                {
-                    this.NetworkstageClearCount = this.stageClearCount + 1;
-                }
-            }
-            this.GenerateStageRNG();
-            this.RecalculateDifficultyCoefficent();
-        }
-        public override void Start()
-        {
-            base.Start();
 
-            
-
-
-
-        }
 
         [SystemInitializer(typeof(GameModeCatalog))]
         private static void E()

@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 970507933
+CRC: 3800247927
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: fe6fd2014b3b33650fc39c71ab1f51ae
+    Hash: 2656964886bd1725c9c2ebf4daffd585
   TypeTreeHash:
     serializedVersion: 2
     Hash: 67833fc9ecf7494dc20fc25fca86f72e
@@ -232,6 +232,7 @@ Assets:
 - Assets/ChessHealthbar.prefab
 - Assets/ShopSlot.prefab
 - Assets/RoundController.prefab
+- Assets/HUDAutochessOld.prefab
 - Assets/OldStuff/Hexagon3.prefab
 - Assets/PodShop.prefab
 - Assets/OldStuff/Hexagon1.prefab
