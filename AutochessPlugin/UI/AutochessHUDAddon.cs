@@ -13,7 +13,7 @@ namespace RORAutochess.UI
         public Shop shop;
         public RerollButton rerollButton;
         public BuyXPButton xpButton;
-        public EXPPanel xpPanel;
+        public EXPText xpPanel;
         public CharacterMaster targetMaster;
         public AllyHealthBarViewer allyHealthBarViewer;
 

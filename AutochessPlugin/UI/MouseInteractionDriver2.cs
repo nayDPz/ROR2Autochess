@@ -20,7 +20,7 @@ namespace RORAutochess.UI
 		{
 			this.networkIdentity = base.GetComponent<NetworkIdentity>();
 			this.master = base.GetComponent<CharacterMaster>();
-			this.interactor = base.GetComponent<Interactor>();
+			this.interactor = this.master.GetBodyObject().GetComponent<Interactor>();
 		}
 
 		 
@@ -35,10 +35,10 @@ namespace RORAutochess.UI
 				GameObject gameObject = this.FindBestInteractableObject();
 				if (gameObject)
 				{
-					UnitPickupInteraction interaction = gameObject.GetComponent<UnitPickupInteraction>();
-					if(interaction && interaction.GetInteractability(this.master) == Interactability.Available)
+					IInteractable interaction = gameObject.GetComponent<IInteractable>();
+					if(interaction != null && interaction.GetInteractability(this.interactor) == Interactability.Available)
                     {
-						interaction.PickupUnit(this.master);
+						this.interactor.AttemptInteraction(gameObject);
 						this.interactableCooldown = 0.25f;
 					}
 					
@@ -57,6 +57,10 @@ namespace RORAutochess.UI
 			{
 				return this.interactableOverride;
 			}
+
+			if(!this.interactor)
+				this.interactor = this.master.GetBodyObject().GetComponent<Interactor>();
+
 			float num = 0f;
 			Ray originalAimRay = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
 
@@ -70,8 +74,8 @@ namespace RORAutochess.UI
 				GameObject entity2 = EntityLocator.GetEntity(collider.gameObject);
 				if (entity2)
 				{
-					UnitPickupInteraction component2 = entity2.GetComponent<UnitPickupInteraction>();
-					if (component2 != null && component2.GetInteractability(this.master) != Interactability.Disabled)
+					IInteractable interaction = entity2.GetComponent<IInteractable>();
+					if(interaction != null && interaction.GetInteractability(this.interactor) == Interactability.Available)
 					{
 						Physics.Raycast(originalAimRay, out RaycastHit hit, 1000f, LayerIndex.world.intVal);
 						float num3 = (collider.transform.position - hit.point).magnitude;

@@ -7,12 +7,8 @@ namespace RORAutochess.UI
 {
 	// Token: 0x02000CF6 RID: 3318
 	[RequireComponent(typeof(RectTransform))]
-	public class EXPPanel : MonoBehaviour
+	public class EXPText : MonoBehaviour
 	{
-		private void Awake()
-		{
-			this.rectTransform = base.GetComponent<RectTransform>();
-		}
 
 		public void Update()
 		{
@@ -34,21 +30,11 @@ namespace RORAutochess.UI
 			{
 				this.maxXP.text = max.ToString();
 			}
-			if (this.fillRectTransform)
-			{
-				Rect rect = this.rectTransform.rect;
-				Rect rect2 = this.fillRectTransform.rect;
-				this.fillRectTransform.anchorMin = new Vector2(0f, 0f);
-				this.fillRectTransform.anchorMax = new Vector2(x, 1f);
-				this.fillRectTransform.sizeDelta = new Vector2(1f, 1f);
-			}
 		}
 
 
 		public TextMeshProUGUI currentXP;
 		public TextMeshProUGUI maxXP;
 		public CharacterMaster source;
-		public RectTransform fillRectTransform;
-		private RectTransform rectTransform;
 	}
 }

@@ -13,13 +13,15 @@ namespace RORAutochess.Board
         public static GameObject prefab;
         public static void Init()
         {
-            prefab = AutochessPlugin.hud.LoadAsset<GameObject>("RoundController");
+            prefab = AutochessPlugin.assetbundle.LoadAsset<GameObject>("RoundController");
             EntityStateMachine e = prefab.GetComponent<EntityStateMachine>();
             e.mainStateType = new EntityStates.SerializableEntityStateType(typeof(PrepPhase));
             e.initialStateType = new EntityStates.SerializableEntityStateType(typeof(PrepPhase));
         }
 
         public List<ChessBoard> boards;
+
+        public int stageCount = 1;
 
         public float currentPhaseDuration;
         public float currentPhaseTime;

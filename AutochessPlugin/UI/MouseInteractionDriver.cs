@@ -25,7 +25,7 @@ namespace RORAutochess.UI
 
         private GameObject InteractionDriver_FindBestInteractableObject(On.RoR2.InteractionDriver.orig_FindBestInteractableObject orig, InteractionDriver self)
         {
-            if(AutochessRun.instance)
+            if(AutochessRun.instance is AutochessRun)
             {
                 if (self.interactableOverride)
                 {
@@ -51,7 +51,7 @@ namespace RORAutochess.UI
         }
         private void InteractionDriver_FixedUpdate(On.RoR2.InteractionDriver.orig_FixedUpdate orig, InteractionDriver self)
         {
-            if(AutochessRun.instance)
+            if(AutochessRun.instance is AutochessRun)
             {
                 if (self.networkIdentity.hasAuthority)
                 {

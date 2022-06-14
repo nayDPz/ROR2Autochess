@@ -14,12 +14,15 @@ namespace RORAutochess
 		public static GameObject podShopPrefab;
         public static GameObject chessHealthbarPrefab;
 		public static GameObject podSpawnPointPrefab;
+		public static GameObject playerBodyPrefab;
 
-        // Vanilla stuff
+		// Vanilla stuff
+		public static GameObject chatBoxPrefab;
         public static GameObject buffIcon;
         public static Material uiCooldownMat;
         public static Material uiFlashMat;
         public static Material transparentBlueMat;
+		public static TimerStringFormatter timerTextThing;
         public static void LoadStuff()
         {
             
@@ -30,14 +33,14 @@ namespace RORAutochess
             uiCooldownMat = Addressables.LoadAssetAsync<Material>("RoR2/Base/UI/matUISkillCD.mat").WaitForCompletion();
             transparentBlueMat = Addressables.LoadAssetAsync<Material>("RoR2/Base/Common/matEditorTemporary.mat").WaitForCompletion();
 
-			podShopPrefab = AutochessPlugin.hud.LoadAsset<GameObject>("PodShop");
+			podShopPrefab = AutochessPlugin.assetbundle.LoadAsset<GameObject>("PodShop");
 			podShopPrefab.transform.Find("PodShopSlot").Find("FlashPanel").GetComponent<Image>().material = Stuff.uiFlashMat;
 			//podShopPrefab.transform.Find("FlashPanel").Find("FlashPanel, Expanding").GetComponent<Image>().material = Stuff.uiFlashMat;
 
-			podSpawnPointPrefab = AutochessPlugin.hud.LoadAsset<GameObject>("PodSpawnPoint");
+			podSpawnPointPrefab = AutochessPlugin.assetbundle.LoadAsset<GameObject>("PodSpawnPoint");
 			podSpawnPointPrefab.transform.Find("EscapePodMesh").GetComponent<MeshRenderer>().material = transparentBlueMat;
 
-			chessHealthbarPrefab = AutochessPlugin.hud.LoadAsset<GameObject>("ChessHealthbar");
+			chessHealthbarPrefab = AutochessPlugin.assetbundle.LoadAsset<GameObject>("ChessHealthbar");
             UnitHealthbar h = chessHealthbarPrefab.GetComponent<UnitHealthbar>();
 			h.skill1Icon.gameObject.transform.Find("FlashPanel").GetComponent<Image>().material = Stuff.uiFlashMat;
 			h.skill1Icon.gameObject.transform.Find("FlashPanel").Find("FlashPanel, Expanding").GetComponent<Image>().material = Stuff.uiFlashMat;
@@ -54,9 +57,12 @@ namespace RORAutochess
 			h.skill4Icon.gameObject.transform.Find("FlashPanel").GetComponent<Image>().material = Stuff.uiFlashMat;
 			h.skill4Icon.gameObject.transform.Find("FlashPanel").Find("FlashPanel, Expanding").GetComponent<Image>().material = Stuff.uiFlashMat;
 			h.skill4Icon.gameObject.transform.Find("CooldownPanel").GetComponent<RawImage>().material = Stuff.uiCooldownMat;
-			
 
+			playerBodyPrefab = AutochessPlugin.assetbundle.LoadAsset<GameObject>("AutochessPlayerBody");
+			ContentPacks.bodyPrefabs.Add(playerBodyPrefab);
 
+			chatBoxPrefab = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/ChatBox, In Run.prefab").WaitForCompletion();
+			timerTextThing = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<TimerStringFormatter>("RoR2/Base/Common/tsfRunStopwatch.asset").WaitForCompletion();
 		}
     }
 }

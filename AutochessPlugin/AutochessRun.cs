@@ -34,7 +34,7 @@ namespace RORAutochess
             r.lobbyBackgroundPrefab = cr.lobbyBackgroundPrefab;
             r.gameOverPrefab = cr.gameOverPrefab;
 
-            ui = AutochessPlugin.hud.LoadAsset<GameObject>("HUDAutochess");
+            ui = AutochessPlugin.assetbundle.LoadAsset<GameObject>("HUDAutochessOld");
             ui.AddComponent<CursorOpener>();
             r.uiPrefab = null;
 

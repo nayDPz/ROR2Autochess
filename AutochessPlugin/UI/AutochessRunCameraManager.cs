@@ -3,43 +3,17 @@ using System.Collections.ObjectModel;
 using RoR2.CameraModes;
 using UnityEngine;
 using RoR2;
+using RoR2.UI;
 
 namespace RORAutochess.UI
 {
 	 
 	public class AutochessRunCameraManager : MonoBehaviour // this is pretty bad i think
 	{
-		 
-		private static GameObject GetNetworkUserBodyObject(NetworkUser networkUser)
-		{
-			if (networkUser.masterObject)
-			{
-				CharacterMaster component = networkUser.masterObject.GetComponent<CharacterMaster>();
-				if (component)
-				{
-					return component.GetBodyObject();
-				}
-			}
-			return null;
-		}
-		 
+
 		private void Update()
 		{
-			bool flag = Stage.instance;
-			if (flag)
-			{
-				int i = 0;
-				int count = CameraRigController.readOnlyInstancesList.Count;
-				while (i < count)
-				{
-					if (CameraRigController.readOnlyInstancesList[i].suppressPlayerCameras)
-					{
-						return;
-					}
-					i++;
-				}
-			}
-			if (flag)
+			if (Stage.instance)
 			{
 				int num = 0;
 				ReadOnlyCollection<NetworkUser> readOnlyLocalPlayersList = NetworkUser.readOnlyLocalPlayersList;
@@ -51,40 +25,25 @@ namespace RORAutochess.UI
 					{
 						cameraRigController = UnityEngine.Object.Instantiate<GameObject>(LegacyResourcesAPI.Load<GameObject>("Prefabs/Main Camera")).GetComponent<CameraRigController>();
 						this.cameras[num] = cameraRigController;
+						cameraRigController.createHud = false;
 
-						Transform sc = cameraRigController.gameObject.transform.Find("Scene Camera");
-						//if(sc) // idk what this is
-      //                  {
-						//	RoR2.PostProcessing.VisionLimitEffect v = sc.gameObject.GetComponent<RoR2.PostProcessing.VisionLimitEffect>();
-						//	if (v) Destroy(v);
-      //                  }
+
+						GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(AutochessRun.ui); // idk
+						gameObject.transform.Find("MainContainer").Find("MainUIArea").Find("SpringCanvas").Find("BottomLeftCluster").Find("ChatBoxRoot").GetComponent<InstantiatePrefabBehavior>().prefab = Stuff.chatBoxPrefab; // this sucks
+						gameObject.transform.Find("MainContainer").Find("MainUIArea").Find("SpringCanvas").Find("AutochessRunInfoHudPanel").Find("TimerPanel").Find("TimerText").GetComponent<TimerText>().format = Stuff.timerTextThing;
+						cameraRigController.hud = gameObject.GetComponent<HUD>();
+						cameraRigController.hud.cameraRigController = cameraRigController;
+						cameraRigController.hud.GetComponent<Canvas>().worldCamera = cameraRigController.uiCam;
+						cameraRigController.hud.GetComponent<CrosshairManager>().cameraRigController = cameraRigController;
+						cameraRigController.hud.localUserViewer = cameraRigController.localUserViewer;
+
 					}
 					cameraRigController.viewer = networkUser;
 					networkUser.cameraRigController = cameraRigController;
-					GameObject networkUserBodyObject = AutochessRunCameraManager.GetNetworkUserBodyObject(networkUser);
-					ForceSpectate forceSpectate = InstanceTracker.FirstOrNull<ForceSpectate>();
-					if (forceSpectate)
-					{
-						cameraRigController.nextTarget = forceSpectate.target;
-						cameraRigController.cameraMode = CameraModePlayerChess.spectator;
-					}
-					else if (networkUserBodyObject)
-					{
-						cameraRigController.nextTarget = networkUserBodyObject;
-						cameraRigController.cameraMode = CameraModePlayerChess.playerChess;
-					}
-					else if (!cameraRigController.disableSpectating)
-					{
-						cameraRigController.cameraMode = CameraModePlayerChess.spectator;
-						if (!cameraRigController.target)
-						{
-							cameraRigController.nextTarget = CameraRigControllerSpectateControls.GetNextSpectateGameObject(networkUser, null);
-						}
-					}
-					else
-					{
-						cameraRigController.cameraMode = CameraModeNone.instance;
-					}
+
+					cameraRigController.nextTarget = RunCameraManager.GetNetworkUserBodyObject(networkUser);
+					cameraRigController.cameraMode = CameraModePlayerChess.playerChess;
+
 					num++;
 				}
 				int num2 = num;

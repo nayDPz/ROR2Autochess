@@ -17,6 +17,7 @@ namespace RORAutochess
         public const float baseTileWidth = 1.732f;
         public const float baseTileHeight = 2.0f;
 
+        public static Vector3 boardPosition = new Vector3(0, 100f, 0);
         public static Vector3 cameraPosition = new Vector3(6.75f, 7.285f, 6.16f);
         public static Quaternion cameraRotation = Quaternion.Euler(40f, 180f, 0f);
 
@@ -47,9 +48,9 @@ namespace RORAutochess
         public static void Setup(int x, int y, float gap, float scale)
         {
             SurfaceDef d = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<SurfaceDef>("RoR2/Base/Common/sdStone.asset").WaitForCompletion();
-            AutochessPlugin.hud.LoadAsset<GameObject>("Hexagon1").GetComponent<SurfaceDefProvider>().surfaceDef = d;
-            AutochessPlugin.hud.LoadAsset<GameObject>("Hexagon2").GetComponent<SurfaceDefProvider>().surfaceDef = d;
-            AutochessPlugin.hud.LoadAsset<GameObject>("Hexagon3").GetComponent<SurfaceDefProvider>().surfaceDef = d;
+            AutochessPlugin.assetbundle.LoadAsset<GameObject>("Hexagon1").GetComponent<SurfaceDefProvider>().surfaceDef = d;
+            AutochessPlugin.assetbundle.LoadAsset<GameObject>("Hexagon2").GetComponent<SurfaceDefProvider>().surfaceDef = d;
+            AutochessPlugin.assetbundle.LoadAsset<GameObject>("Hexagon3").GetComponent<SurfaceDefProvider>().surfaceDef = d;
 
             
 
@@ -58,7 +59,7 @@ namespace RORAutochess
             boardWidth = x;
             boardHeight = y;
 
-            gridPrefab = AutochessPlugin.hud.LoadAsset<GameObject>("Grid");
+            gridPrefab = AutochessPlugin.assetbundle.LoadAsset<GameObject>("Grid");
 
             instancesList = new List<ChessBoard>();
 
@@ -75,7 +76,7 @@ namespace RORAutochess
 
         private static void SetupScene(Scene scene, LoadSceneMode arg1) // ugh
         {
-            if (AutochessRun.instance)
+            if (AutochessRun.instance is AutochessRun)
             {
 
                 SceneInfo info = GameObject.FindObjectOfType<SceneInfo>();
@@ -86,17 +87,20 @@ namespace RORAutochess
                     if (obj[i].gameObject != info.gameObject)
                         GameObject.Destroy(obj[i].gameObject);
                 }
+                Collider[] obj2 = GameObject.FindObjectsOfType<Collider>();
+                for (int i = 0; i < obj2.Length; i++)
+                {
+                    if (obj2[i].gameObject != info.gameObject)
+                        GameObject.Destroy(obj2[i].gameObject);
+                }
 
-                DirectorCore d = GameObject.FindObjectOfType<DirectorCore>(); // director stuff soon
-                if(d)
-                    GameObject.Destroy(d.gameObject);
 
                 CreateBoard();
 
 
 
-                groundNodeGraph = GenerateNodegraph(boardWidth, boardHeight, gap, scale, Vector3.zero);
-                airNodeGraph = GenerateNodegraph(boardWidth, boardHeight, gap, scale, Vector3.up * 10f);
+                groundNodeGraph = GenerateNodegraph(boardWidth, boardHeight, gap, scale, ChessBoard.boardPosition);
+                airNodeGraph = GenerateNodegraph(boardWidth, boardHeight, gap, scale, ChessBoard.boardPosition + Vector3.up * 10f);
                 info.groundNodesAsset = groundNodeGraph;
                 info.groundNodes = groundNodeGraph;
                 info.airNodesAsset = airNodeGraph;
@@ -116,10 +120,18 @@ namespace RORAutochess
 
             CharacterMaster player = players[0].cachedMaster;
             GameObject obj = new GameObject("Board_" + players[0].userProfile.name);
+
+            GameObject camera = new GameObject("CameraHolder_" + obj.name);    // NEED TO CALCULATE CAMERA POSITION FROM BOARD SIZE !!!!! 
+            camera.transform.parent = obj.transform;
+            camera.transform.position = ChessBoard.cameraPosition * ChessBoard.scale * 2; ///  2 ? 
+            camera.transform.rotation = ChessBoard.cameraRotation;
+            ChessBoard.cameraTransform = camera.transform;
+
+            obj.transform.position = ChessBoard.boardPosition;
             ChessBoard board = obj.AddComponent<ChessBoard>();
             board.owner = player;
             board.gridInstance = GameObject.Instantiate<GameObject>(ChessBoard.gridPrefab, obj.transform);
-            Board.GridGeneration g = board.gridInstance.transform.Find("Hexagons").gameObject.GetComponent<Board.GridGeneration>();
+            Board.GridGeneration g = board.gridInstance.transform.Find("Hexagons").gameObject.GetComponent<Board.GridGeneration>(); // cringe
             g.gridWidth = boardWidth;
             g.gridHeight = boardHeight;
             g.gap = gap;
@@ -135,10 +147,7 @@ namespace RORAutochess
                 board.tiles[i].CalculateTileDistances();
             }
 
-            GameObject camera = new GameObject("CameraHolder_" + obj.name);    // NEED TO CALCULATE CAMERA POSITION FROM BOARD SIZE !!!!!            
-            camera.transform.position = ChessBoard.cameraPosition * ChessBoard.scale * 2; ///  2 ? 
-            camera.transform.rotation = ChessBoard.cameraRotation;
-            ChessBoard.cameraTransform = camera.transform;
+            
         }
 
         public static ChessBoard GetBoardFromMaster(CharacterMaster m)
@@ -165,6 +174,13 @@ namespace RORAutochess
 
         private void Stage_onStageStartGlobal(Stage obj)
         {
+
+            CombatDirector[] obj2 = GameObject.FindObjectsOfType<CombatDirector>(); // make own director
+            for (int i = 0; i < obj2.Length; i++)
+            {
+                GameObject.Destroy(obj2[i]);
+            }
+
             ReadOnlyCollection<NetworkUser> readOnlyInstancesList = NetworkUser.readOnlyInstancesList;
             BodyIndex bodyIndex = readOnlyInstancesList[0].bodyIndexPreference;
 
@@ -184,7 +200,7 @@ namespace RORAutochess
 
             CharacterMaster player = readOnlyInstancesList[0].master;
 
-            GameObject body = player.GetBodyObject();
+            GameObject body = this.owner.GetBodyObject();
             ModelLocator model = body.GetComponent<ModelLocator>();
             if (model)
             {
@@ -203,7 +219,8 @@ namespace RORAutochess
             ChessBoard.Tile tile = GetLowestUnoccupiedTile(this.tiles);
             DeployUnit(master.GetComponent<CharacterMaster>(), tile);
 
-            body.SetActive(false);
+            this.owner.bodyPrefab = Stuff.playerBodyPrefab;
+            this.owner.Respawn(Vector3.zero, Quaternion.identity);
         }
 
         public void CreatePodShop(Tile tile) // should redo this completely
@@ -366,11 +383,9 @@ namespace RORAutochess
                     if(data && data.navigator) // shouldnt null check, game will break anyways
                     {
                         data.navigator.inCombat = false;
-                        if (!data.navigator.benched)
-                        {
-                            data.tileIndex = data.navigator.currentTile.index;
-                            this.ownerUnitsOnBoard.Add(data);
-                        }
+                        data.tileIndex = data.navigator.currentTile.index;
+                        this.ownerUnitsOnBoard.Add(data);
+                        
                     }
                     
                 }
@@ -410,7 +425,7 @@ namespace RORAutochess
 
             for (int i = 0; i < tiles.Length; i++)
             {
-                tiles[i].occupied = false;
+                tiles[i].occupant = null;
             }
 
             foreach (CharacterMaster unit in this.enemiesOnBoard)
@@ -515,7 +530,7 @@ namespace RORAutochess
                     NodeGraph.NodeIndex nodeIndex = new NodeGraph.NodeIndex { nodeIndex = index };
                     int debugLinksGenerated = 0;
 
-                    Log.LogInfo("LINKING " + index);
+                    //Log.LogInfo("LINKING " + index);
                     if (k > 0)
                     {
                         links.Add(CreateLink(nodeIndex, index - 1));
@@ -590,7 +605,7 @@ namespace RORAutochess
                         }
                     } // above
 
-                    Log.LogDebug("Hex " + k + "|" + i + " generated at position + " + nodes[index].position.ToString() + " with " + debugLinksGenerated + " links.");
+                    //Log.LogDebug("Hex " + k + "|" + i + " generated at position + " + nodes[index].position.ToString() + " with " + debugLinksGenerated + " links.");
                     #endregion
                 }
             }
@@ -609,7 +624,7 @@ namespace RORAutochess
 
         private static NodeGraph.Link CreateLink(NodeGraph.NodeIndex indexA, int indexB)
         {
-            Log.LogDebug(indexA.nodeIndex + " -> " + indexB);
+            //Log.LogDebug(indexA.nodeIndex + " -> " + indexB);
             return new NodeGraph.Link
             {
                 nodeIndexA = indexA,
@@ -805,7 +820,13 @@ namespace RORAutochess
             public ChessBoard board;
             public int index;
             public Vector3 worldPosition;
-            public bool occupied;
+            public bool occupied
+            {
+                get
+                {
+                    return occupant != null;
+                }
+            }
             public TileNavigator occupant; // who even uses the word occupant lol
             public int[] connectedTileIndices;
             public Tile[] connectedTiles;

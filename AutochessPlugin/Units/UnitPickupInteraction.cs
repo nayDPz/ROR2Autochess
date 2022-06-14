@@ -10,7 +10,7 @@ using RORAutochess.AI;
 namespace RORAutochess.Units
 {
     [RequireComponent(typeof(Highlight), typeof(EntityLocator))]
-    class UnitPickupInteraction : MonoBehaviour
+    class UnitPickupInteraction : MonoBehaviour, IInteractable
     {
         private bool pickedUp;
 
@@ -65,7 +65,7 @@ namespace RORAutochess.Units
             if (!pickedUp)
             {
                 pickedUp = true;
-                if(AutochessRun.instance)
+                if(AutochessRun.instance is AutochessRun)
                 {                     
                     this.tileNavigator.Pickup();
                 }
@@ -84,7 +84,7 @@ namespace RORAutochess.Units
         {
             pickedUp = false;
 
-            if (AutochessRun.instance)
+            if (AutochessRun.instance is AutochessRun)
             {
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
                 Physics.Raycast(ray, out RaycastHit hit, 1000f);
@@ -128,6 +128,25 @@ namespace RORAutochess.Units
         public bool ShouldShowOnScanner()
         {
             return false;
+        }
+
+        public Interactability GetInteractability([NotNull] Interactor activator)
+        {
+            return this.GetInteractability(GetMaster(activator));
+        }
+
+        public void OnInteractionBegin([NotNull] Interactor activator)
+        {
+            this.PickupUnit(GetMaster(activator));
+        }
+
+        private CharacterMaster GetMaster(Interactor activator)
+        {
+            CharacterBody b = activator.GetComponent<CharacterBody>();
+            CharacterMaster m = activator.GetComponent<CharacterMaster>();
+            if (!m && b) m = b.master;
+
+            return m;
         }
     }
 }

@@ -18,7 +18,7 @@ namespace RORAutochess.Board
         public float gap = 0.0f;
         public float scale;
 
-        Vector3 startPos;
+        public Vector3 startPos;
         
 
         void Start()
@@ -43,7 +43,6 @@ namespace RORAutochess.Board
             float x = -hexWidth * (gridWidth / 2) - offset;
             float z = hexHeight * 0.75f * (gridHeight / 2);
 
-            startPos = new Vector3(0, 0, 0);// Vector3(x, 0, z);
         }
 
         Vector3 CalcWorldPos(Vector2 gridPos)
@@ -67,11 +66,12 @@ namespace RORAutochess.Board
                 {
                     Transform t = hexPrefab1;
                     if (i == 1) t = hexPrefab1;
-                    else if (i == 2) t = hexPrefab2;
+                    else if (i == 2) t = hexPrefab2;//
                     else if (i == 3) t = hexPrefab3;
                     Transform hex = Instantiate(t) as Transform;
                     Vector2 gridPos = new Vector2(x, y);
-                    hex.position = CalcWorldPos(gridPos);
+                    hex.localPosition = CalcWorldPos(gridPos) + Vector3.up * 100; // WTFFFFFFFFFFFFFFF///////////////////////////////      
+                    
                     hex.parent = this.transform;
                     hex.name = "Hexagon" + x + "|" + y;
                     i++;
@@ -79,7 +79,9 @@ namespace RORAutochess.Board
 
                 }
             }
-            base.transform.parent.localScale *= scale; // this is bad
+
+            
+            base.transform.parent.localScale *= scale; // what the fuck MAN
             base.transform.parent.Find("Colliders").localScale *= 2;
         }
     }

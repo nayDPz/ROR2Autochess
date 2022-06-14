@@ -11,8 +11,27 @@ namespace RORAutochess.UI
 	public class CameraModePlayerChess : CameraModeBase
 	{
 
+		private Plane boardPlane = new Plane(Vector3.up, ChessBoard.boardPosition);
 
 		private Transform cameraTransform;
+
+		private float doubleClickTimer;
+
+
+		public float scrollSpeed = 2f;
+		public float rotationSpeed = 1f;
+		
+
+		private Vector3 desiredCameraPosition;
+		private Vector3 desiredCameraAngles;
+		private Quaternion desiredCameraRotation;
+
+		private Vector3 mouseAnchor;
+		private float focusLength;
+
+		private bool cameraControl;
+		private bool moveCamera;
+		private bool rotateCamera;
 
 		public override object CreateInstanceData(CameraRigController cameraRigController)
 		{
@@ -24,6 +43,8 @@ namespace RORAutochess.UI
 		{
 			base.OnInstallInternal(rawInstancedata, cameraRigController);
 			((CameraModePlayerChess.InstanceData)rawInstancedata).neutralFov = cameraRigController.baseFov;
+
+			
 		}
 
 
@@ -33,26 +54,92 @@ namespace RORAutochess.UI
 		}
 
 
+		private void ResetCamera()
+        {
+			this.desiredCameraPosition = this.cameraTransform.position;
+			this.desiredCameraRotation = this.cameraTransform.rotation;
+			this.desiredCameraAngles = this.desiredCameraRotation.eulerAngles;
+		}
+
 		public override void UpdateInternal(object rawInstanceData, in CameraModeBase.CameraModeContext context, out CameraModeBase.UpdateResult result)
 		{
-			Quaternion rotation = context.cameraInfo.previousCameraState.rotation;
-			Vector3 position = context.cameraInfo.previousCameraState.position;
-			float fov = context.cameraInfo.baseFov;
-			if (!this.cameraTransform)
+			this.doubleClickTimer -= Time.fixedDeltaTime;
+			if (Input.GetKeyDown(KeyCode.Space))
+			{
+				if (this.doubleClickTimer > 0f)
+					this.ResetCamera();
+				this.doubleClickTimer = 0.25f;
+			}
+
+			
+			
+
+			if (!this.cameraTransform) // ?
 			{
 				this.cameraTransform = ChessBoard.cameraTransform;
+				this.ResetCamera();
 			}
-			if(!this.cameraTransform)
-            {
-				Log.LogError("fuck");
-            }
 
-			result.cameraState.position = this.cameraTransform.position;
-			result.cameraState.rotation = this.cameraTransform.rotation;
+			
+			
+
+			this.cameraControl = Input.GetKey(KeyCode.Space);
+
+
+
+			Ray ray = new Ray(context.cameraInfo.previousCameraState.position, context.cameraInfo.previousCameraState.rotation * Vector3.forward);
+
+			if(!Input.GetMouseButton(0))
+				this.boardPlane.Raycast(ray, out focusLength);
+
+
+
+			if (this.cameraControl)
+            {
+				if (Input.GetMouseButtonDown(0))
+				{
+					
+					this.mouseAnchor = context.cameraInfo.sceneCam.ScreenToWorldPoint(Input.mousePosition + new Vector3(0, 0, focusLength));
+				}
+
+				
+				if (Input.GetMouseButton(0))
+                {
+					Vector3 d = context.cameraInfo.sceneCam.ScreenToWorldPoint(Input.mousePosition + new Vector3(0, 0, focusLength)) - context.cameraInfo.previousCameraState.position;
+					this.desiredCameraPosition = this.mouseAnchor - d;
+				}
+
+				
+				if(Input.GetMouseButton(1))
+                {
+					if (Input.GetAxis("Mouse X") != 0 || Input.GetAxis("Mouse Y") != 0)
+					{
+						this.desiredCameraAngles.y += -Input.GetAxis("Mouse X") * this.rotationSpeed;
+						this.desiredCameraAngles.x += Input.GetAxis("Mouse Y") * this.rotationSpeed;
+
+
+						this.desiredCameraRotation = Quaternion.Euler(this.desiredCameraRotation.x + this.desiredCameraAngles.x, this.desiredCameraRotation.y + this.desiredCameraAngles.y, this.desiredCameraRotation.z);
+					}
+				}
+
+
+			}
+
+			float s = Input.mouseScrollDelta.y;
+			if (s != 0)
+			{
+				this.desiredCameraPosition += (this.desiredCameraRotation * Vector3.forward) * s * this.scrollSpeed;
+			}
+
+
+
+
+
+			result.cameraState.position = this.desiredCameraPosition;
+			result.cameraState.rotation = this.desiredCameraRotation;
 			result.cameraState.fov = 50f; // ?
 			result.showSprintParticles = false;
 			result.firstPersonTarget = null;
-
 			this.UpdateCursor(rawInstanceData, context, result.cameraState, out result.crosshairWorldPosition);
 		}
 

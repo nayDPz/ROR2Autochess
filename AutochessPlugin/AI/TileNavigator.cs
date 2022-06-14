@@ -9,65 +9,54 @@ namespace RORAutochess.AI
 {
     public class TileNavigator : MonoBehaviour
     {
-        public CharacterMaster owner;
-        public CharacterBody ownerBody;
+        public CharacterMaster master;
+        public CharacterBody body;
         public ChessBoard.Tile currentTile;
-
-        public bool navigationEnabled;
-        public bool benched;
-        public bool inCombat;
-
         public ChessBoard currentBoard;
-
+        public bool inCombat;
 
         private void Awake()
         {
-            if (!this.owner)
-                this.owner = base.GetComponent<CharacterMaster>();
+            if (!this.master)
+                this.master = base.GetComponent<CharacterMaster>();
         }
 
         private void Start()
         {
-            if(this.owner.minionOwnership.group != null)
-                this.currentBoard = ChessBoard.GetBoardFromMaster(this.owner.minionOwnership.group.resolvedOwnerMaster);
-            else
-                this.currentBoard = ChessBoard.instancesList[0]; // for testing remove later
+            if(this.master)
+            {
+                if (this.master.minionOwnership.group != null)
+                    this.currentBoard = ChessBoard.GetBoardFromMaster(this.master.minionOwnership.group.resolvedOwnerMaster);
+                else
+                    this.currentBoard = ChessBoard.instancesList[0]; // for testing remove later
 
 
-            this.ownerBody = this.owner.GetBody();
+                this.body = this.master.GetBody();
+            }
+            
         }
-
-        public void Bench()
-        {
-            this.benched = true;
-            this.navigationEnabled = false;
-        }
-        public void Unbench()
-        {
-            this.benched = false;
-            this.navigationEnabled = true;
-        }
-
 
         public void SetCurrentTile(ChessBoard.Tile tile) 
         {
             this.currentTile = tile;
-            this.currentTile.occupied = true;
-            bool bench = false;
-            
+            this.currentTile.occupant = this;
         }
         
         public void Pickup()
         {
-            if(this.currentTile != null)
-                this.currentTile.occupied = false;
+            if (!this.master || !this.body)
+                return;
 
-            this.navigationEnabled = false;
+            if(this.currentTile != null)
+            {
+                this.currentTile.occupant = null;
+            }
+               
         }
         private void OnDestroy()
         {
             if(this.currentTile != null)
-                this.currentTile.occupied = false;
+                this.currentTile.occupant = null;
 
 
         }

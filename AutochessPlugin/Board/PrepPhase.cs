@@ -9,6 +9,7 @@ namespace RORAutochess.Board
         public override void OnEnter()
         {
             base.OnEnter();
+            this.roundController.stageCount++;
             foreach (ChessBoard board in this.roundController.boards)
             {
                 int i = UnityEngine.Random.RandomRangeInt(0, board.tiles.Length / 2); // bad bad
