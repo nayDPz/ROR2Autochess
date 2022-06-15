@@ -43,7 +43,17 @@ namespace RORAutochess
         public List<UnitData> ownerUnitsOnBoard = new List<UnitData>();
         public List<CharacterMaster> enemiesOnBoard = new List<CharacterMaster>();
         private CharacterMaster enemy;
-        
+
+
+        public bool readyForCombat;
+        public bool inCombat;
+
+        public Action onPrepPhase;
+        public Action onCombatPhase;
+
+
+        public static int teleporterNodeIndex = 127;
+
         // this whole thing is set up horribly. needs to be redone for multiplayer
         public static void Setup(int x, int y, float gap, float scale)
         {
@@ -170,6 +180,55 @@ namespace RORAutochess
         {
             Stage.onStageStartGlobal += Stage_onStageStartGlobal;
             
+        }
+
+        private enum CombatStatus
+        {
+            InCombat,
+            Draw,
+            PlayerWin,
+            EnemyWin
+        }
+        private CombatStatus GetCombatStatus()
+        {
+            bool allEnemiesDead = true;
+            bool allAlliesDead = true;
+            CombatStatus s = CombatStatus.InCombat;
+            foreach(CharacterMaster m in this.enemiesOnBoard)
+            {
+                if(m && !m.IsDeadAndOutOfLivesServer())
+                {
+                    allEnemiesDead = false;
+                    break;
+                }
+            }
+            foreach(UnitData u in this.ownerUnitsOnBoard)
+            {
+                if(u && u.master && !u.master.IsDeadAndOutOfLivesServer())
+                {
+                    allAlliesDead = false;
+                    break;
+                }
+            }
+
+            if (!allAlliesDead && !allEnemiesDead) s = CombatStatus.InCombat; // probably a way to make this look nicer
+            if (allAlliesDead && allEnemiesDead) s = CombatStatus.Draw;
+            if (!allAlliesDead && allEnemiesDead) s = CombatStatus.PlayerWin;
+            if (allAlliesDead && !allEnemiesDead) s = CombatStatus.EnemyWin;
+
+            return s;
+        }
+
+        private void FixedUpdate()
+        {
+            if(this.inCombat)
+            {
+                CombatStatus s = this.GetCombatStatus();
+                if(s > CombatStatus.InCombat)
+                {
+                    this.SetCombat(false);
+                }
+            }
         }
 
         private void Stage_onStageStartGlobal(Stage obj)
@@ -393,13 +452,13 @@ namespace RORAutochess
             }
         }
 
-        public static int testPveRoundEnemies = 9;
+        public static int testPveRoundEnemies = 5;
         public List<CharacterMaster> CreatePVERound() // giga testing. could do director stuff here?
         {
             var enemyUnits = new List<CharacterMaster>(); 
             var masters = new GameObject[testPveRoundEnemies];
 
-            var choices = new GameObject[]{ MasterCatalog.FindMasterPrefab("LemurianMaster"), MasterCatalog.FindMasterPrefab("GolemMaster"), MasterCatalog.FindMasterPrefab("BeetleMaster") };
+            var choices = new GameObject[]{ MasterCatalog.FindMasterPrefab("LemurianMaster"), MasterCatalog.FindMasterPrefab("BeetleMaster") };
 
             for (int i = 0; i < masters.Length; i++)
             {
@@ -440,6 +499,7 @@ namespace RORAutochess
                 RespawnUnitHome(unit);
             }
             this.ownerUnitsOnBoard.Clear();
+            this.readyForCombat = false;
         }
 
         private void RespawnUnitHome(UnitData unit)
@@ -473,6 +533,8 @@ namespace RORAutochess
 
         public void SetCombat(bool b)
         {
+            this.inCombat = b;
+
             foreach (UnitData unit in this.ownerUnitsOnBoard)
             {
                 unit.navigator.inCombat = b;
@@ -525,6 +587,16 @@ namespace RORAutochess
                     {
                         position = new Vector3((width * k + offset), 0.2f, (-height * i * 0.75f)) * scale + startPos,
                     };
+
+                    if(index == ChessBoard.teleporterNodeIndex) ////////////////// CALCULATE INDEX FOR THESE board size might change
+                    {
+                        nodes[index].flags = NodeFlags.TeleporterOK;
+                    }
+                    if(index <= (nodes.Length / 2) - 1) 
+                    {
+                        nodes[index].flags = NodeFlags.NoCharacterSpawn;
+                        nodes[index].flags |= NodeFlags.NoShrineSpawn;
+                    }
 
                     #region NodeGraph
                     NodeGraph.NodeIndex nodeIndex = new NodeGraph.NodeIndex { nodeIndex = index };

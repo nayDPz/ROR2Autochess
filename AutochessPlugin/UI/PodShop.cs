@@ -8,7 +8,7 @@ using UnityEngine.Events;
 
 namespace RORAutochess.UI
 {
-    public class PodShop : Shop, ILayoutController
+    public class PodShop : Shop
     {
         public GameObject podObject;
         public GameObject flashPanel;
@@ -32,7 +32,7 @@ namespace RORAutochess.UI
             this.flashPanel.SetActive(true);
         }
 
-        public void SetLayoutHorizontal()
+        private void LateUpdate()
         {
             if (!podObject)
                 return;
@@ -51,8 +51,6 @@ namespace RORAutochess.UI
             }
         }
 
-        public void SetLayoutVertical()
-        {
-        }
+
     }
 }

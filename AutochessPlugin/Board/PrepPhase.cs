@@ -9,9 +9,12 @@ namespace RORAutochess.Board
         public override void OnEnter()
         {
             base.OnEnter();
-            this.roundController.stageCount++;
+            this.roundController.roundCount++;
             foreach (ChessBoard board in this.roundController.boards)
             {
+                if (board.onPrepPhase != null)
+                    board.onPrepPhase.Invoke();
+
                 int i = UnityEngine.Random.RandomRangeInt(0, board.tiles.Length / 2); // bad bad
 
                 while (board.tiles[i].occupied)
@@ -24,15 +27,19 @@ namespace RORAutochess.Board
         {
             base.FixedUpdate();
             this.roundController.currentPhaseDuration = this.roundController.prepDuration;
-            if (base.fixedAge >= this.roundController.prepDuration)
+            foreach (ChessBoard board in this.roundController.boards)
             {
-                foreach (ChessBoard board in this.roundController.boards)
-                {
-                    board.SetUnitPositions();
-
-                }
-                this.outer.SetNextState(new PreCombatPhase());
+                if (!board.readyForCombat)
+                    return;
             }
+
+            foreach(ChessBoard board in this.roundController.boards)
+            {
+                board.SetUnitPositions();
+            }
+
+            this.outer.SetNextState(new PreCombatPhase());
+            
         }
         public override void OnExit()
         {

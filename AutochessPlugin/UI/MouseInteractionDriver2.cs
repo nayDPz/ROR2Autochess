@@ -38,6 +38,9 @@ namespace RORAutochess.UI
 					IInteractable interaction = gameObject.GetComponent<IInteractable>();
 					if(interaction != null && interaction.GetInteractability(this.interactor) == Interactability.Available)
                     {
+						PickupPickerController pp = gameObject.GetComponent<PickupPickerController>();
+						if (pp) pp.cutoffDistance = Mathf.Infinity;
+
 						this.interactor.AttemptInteraction(gameObject);
 						this.interactableCooldown = 0.25f;
 					}
@@ -53,6 +56,10 @@ namespace RORAutochess.UI
 		 
 		public GameObject FindBestInteractableObject()
 		{
+			if (Input.GetKey(KeyCode.Space)) // MAKE STATIC KEY && CONFIG
+				return null;
+
+
 			if (this.interactableOverride)
 			{
 				return this.interactableOverride;
@@ -64,7 +71,7 @@ namespace RORAutochess.UI
 			float num = 0f;
 			Ray originalAimRay = Camera.main.ScreenPointToRay(Input.mousePosition, Camera.MonoOrStereoscopicEye.Mono);
 
-			RaycastHit[] hits = Physics.SphereCastAll(originalAimRay.origin, 5f, originalAimRay.direction, 1000f, LayerIndex.CommonMasks.interactable | LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Collide);
+			RaycastHit[] hits = Physics.SphereCastAll(originalAimRay.origin, 3f, originalAimRay.direction, 1000f, LayerIndex.CommonMasks.interactable | LayerIndex.entityPrecise.mask, QueryTriggerInteraction.Collide);
 
 			float d = Mathf.Infinity;
 			GameObject best = null;

@@ -21,7 +21,8 @@ namespace RORAutochess.Board
 
         public List<ChessBoard> boards;
 
-        public int stageCount = 1;
+        public int roundCount = 1;
+        public int stageCount;
 
         public float currentPhaseDuration;
         public float currentPhaseTime;
@@ -46,6 +47,20 @@ namespace RORAutochess.Board
             this.boards = ChessBoard.instancesList;
         }
 
+        private void OnEnable()
+        {
+            RoR2.Stage.onStageStartGlobal += AddOneToStageCount;
+        }
+
+        private void OnDisable()
+        {
+            RoR2.Stage.onStageStartGlobal -= AddOneToStageCount;
+        }
+
+        private void AddOneToStageCount(RoR2.Stage obj)
+        {
+            this.stageCount++;
+        }
 
         public class Stage
         {

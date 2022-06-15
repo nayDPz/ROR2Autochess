@@ -105,7 +105,7 @@ namespace RORAutochess.UI
             {
                 this.dragging = true;
                 selected = true;
-                base.transform.SetParent(GameObject.Find("HUDAutochessOld(Clone)").transform.Find("MainContainer")); /////////////// L
+                base.transform.SetParent(GameObject.Find("HUDAutochess(Clone)").transform.Find("MainContainer")); /////////////// L
             }
         }
 

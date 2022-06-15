@@ -28,7 +28,7 @@ namespace RORAutochess.UI
 						cameraRigController.createHud = false;
 
 
-						GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(AutochessRun.ui); // idk
+						GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(AutochessRun.ui);
 						gameObject.transform.Find("MainContainer").Find("MainUIArea").Find("SpringCanvas").Find("BottomLeftCluster").Find("ChatBoxRoot").GetComponent<InstantiatePrefabBehavior>().prefab = Stuff.chatBoxPrefab; // this sucks
 						gameObject.transform.Find("MainContainer").Find("MainUIArea").Find("SpringCanvas").Find("AutochessRunInfoHudPanel").Find("TimerPanel").Find("TimerText").GetComponent<TimerText>().format = Stuff.timerTextThing;
 						cameraRigController.hud = gameObject.GetComponent<HUD>();

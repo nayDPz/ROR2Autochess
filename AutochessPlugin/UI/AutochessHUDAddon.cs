@@ -16,9 +16,10 @@ namespace RORAutochess.UI
         public EXPText xpPanel;
         public CharacterMaster targetMaster;
         public AllyHealthBarViewer allyHealthBarViewer;
-
+        public ReadyButton readyButton;
         public HUD hud;
 
+        private ChessBoard board;
         public static AutochessHUDAddon FindByMaster(CharacterMaster m)
         {
             foreach(AutochessHUDAddon i in instances)
@@ -37,6 +38,12 @@ namespace RORAutochess.UI
         {
             instances.Remove(this);
         }
+
+        private void Awake()
+        {
+            this.board = ChessBoard.GetBoardFromMaster(this.targetMaster);
+        }
+
         private void Start()
         {
             this.hud = base.GetComponent<HUD>();
@@ -49,6 +56,8 @@ namespace RORAutochess.UI
 
             this.targetMaster = this.hud.targetMaster;
             if (!this.targetMaster) return;
+
+            if (!this.board) this.board = ChessBoard.GetBoardFromMaster(this.targetMaster);
 
             if (this.allyHealthBarViewer)
             {
@@ -70,6 +79,10 @@ namespace RORAutochess.UI
             if(this.shop)
             {
                 this.shop.source = this.targetMaster;
+            }
+            if(this.readyButton)
+            {
+                this.readyButton.board = this.board;
             }
 
         }

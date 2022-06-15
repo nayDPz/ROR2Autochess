@@ -11,26 +11,37 @@ namespace RORAutochess.UI
 	public class CameraModePlayerChess : CameraModeBase
 	{
 
-		private Plane boardPlane = new Plane(Vector3.up, ChessBoard.boardPosition);
+		private Plane boardPlane = new Plane(Vector3.up * 3f, ChessBoard.boardPosition);
 
 		private Transform cameraTransform;
 
-		private float doubleClickTimer;
 
+		private float doubleSpaceTimer;
 
-		public float scrollSpeed = 2f;
-		public float rotationSpeed = 1f;
-		
+		public float minFocusLength;
+		public float scrollSpeed = 6f;
+		public float rotationSpeed = 0.2f;
+
+		private float lerpDuration = 0.25f;
+		private float lerpTimer;
+		private Vector3? lerpVector;
+		private float lerpDistance = 45f;
 
 		private Vector3 desiredCameraPosition;
 		private Vector3 desiredCameraAngles;
 		private Quaternion desiredCameraRotation;
 
-		private Vector3 mouseAnchor;
+		private Vector3 rotationAnchor;
+		private Vector3 initialOffset;
+		private Vector2 mouseAnchor;
+		private Vector3 mouseWorldAnchor;
 		private float focusLength;
+		private float baseFocusLength;
 
 		private bool cameraControl;
-		private bool moveCamera;
+		private bool dragging;
+		private float dragSens = 1f;
+
 		private bool rotateCamera;
 
 		public override object CreateInstanceData(CameraRigController cameraRigController)
@@ -59,16 +70,19 @@ namespace RORAutochess.UI
 			this.desiredCameraPosition = this.cameraTransform.position;
 			this.desiredCameraRotation = this.cameraTransform.rotation;
 			this.desiredCameraAngles = this.desiredCameraRotation.eulerAngles;
+
+			Ray ray = new Ray(this.cameraTransform.position, this.cameraTransform.rotation * Vector3.forward);
+			this.boardPlane.Raycast(ray, out this.baseFocusLength);
 		}
 
 		public override void UpdateInternal(object rawInstanceData, in CameraModeBase.CameraModeContext context, out CameraModeBase.UpdateResult result)
 		{
-			this.doubleClickTimer -= Time.fixedDeltaTime;
+			this.doubleSpaceTimer -= Time.fixedDeltaTime;
 			if (Input.GetKeyDown(KeyCode.Space))
 			{
-				if (this.doubleClickTimer > 0f)
+				if (this.doubleSpaceTimer > 0f)
 					this.ResetCamera();
-				this.doubleClickTimer = 0.25f;
+				this.doubleSpaceTimer = 0.25f;
 			}
 
 			
@@ -87,52 +101,103 @@ namespace RORAutochess.UI
 
 
 
-			Ray ray = new Ray(context.cameraInfo.previousCameraState.position, context.cameraInfo.previousCameraState.rotation * Vector3.forward);
+			Ray ray = new Ray(this.desiredCameraPosition, this.desiredCameraRotation * Vector3.forward);
 
-			if(!Input.GetMouseButton(0))
-				this.boardPlane.Raycast(ray, out focusLength);
+			
 
 
 
 			if (this.cameraControl)
             {
-				if (Input.GetMouseButtonDown(0))
-				{
-					
-					this.mouseAnchor = context.cameraInfo.sceneCam.ScreenToWorldPoint(Input.mousePosition + new Vector3(0, 0, focusLength));
-				}
-
 				
+				if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || Input.mouseScrollDelta.y != 0)
+					this.boardPlane.Raycast(ray, out focusLength);
+
+				Vector3 cursorPos = context.cameraInfo.sceneCam.ScreenToWorldPoint(Input.mousePosition + new Vector3(0, 0, focusLength));
+
+				Vector3 currentCameraPos = context.cameraInfo.sceneCam.transform.position;
+				Quaternion currentCameraRot = context.cameraInfo.sceneCam.transform.rotation;
+
 				if (Input.GetMouseButton(0))
-                {
-					Vector3 d = context.cameraInfo.sceneCam.ScreenToWorldPoint(Input.mousePosition + new Vector3(0, 0, focusLength)) - context.cameraInfo.previousCameraState.position;
-					this.desiredCameraPosition = this.mouseAnchor - d;
-				}
-
-				
-				if(Input.GetMouseButton(1))
-                {
-					if (Input.GetAxis("Mouse X") != 0 || Input.GetAxis("Mouse Y") != 0)
+				{
+					if (Input.GetMouseButtonDown(0))
 					{
-						this.desiredCameraAngles.y += -Input.GetAxis("Mouse X") * this.rotationSpeed;
-						this.desiredCameraAngles.x += Input.GetAxis("Mouse Y") * this.rotationSpeed;
-
-
-						this.desiredCameraRotation = Quaternion.Euler(this.desiredCameraRotation.x + this.desiredCameraAngles.x, this.desiredCameraRotation.y + this.desiredCameraAngles.y, this.desiredCameraRotation.z);
+						this.dragging = false;
+						this.mouseWorldAnchor = cursorPos;
 					}
+
+					Vector3 d = cursorPos - currentCameraPos;
+
+					if (!this.dragging && (this.mouseWorldAnchor - cursorPos).magnitude > this.dragSens) this.dragging = true;
+
+					if (this.dragging)
+						this.desiredCameraPosition = this.mouseWorldAnchor - d;
+
+
 				}
 
 
+				if (Input.GetMouseButtonUp(0) && !this.dragging)
+				{
+					this.lerpTimer = this.lerpDuration;
+					Vector3 between = currentCameraPos - ray.GetPoint(focusLength);
+					between = between.normalized * Mathf.Min(this.lerpDistance, focusLength);
+					Ray ray2 = context.cameraInfo.sceneCam.ScreenPointToRay(Input.mousePosition);
+					this.boardPlane.Raycast(ray2, out float d);
+					this.lerpVector = ray2.GetPoint(d) + between;
+
+				}
+
+				if (Input.GetMouseButton(1))
+				{
+
+					if (Input.GetMouseButtonDown(1))
+					{
+						this.mouseAnchor = Input.mousePosition;
+						this.rotationAnchor = ray.GetPoint(focusLength); // pointless
+						this.initialOffset = currentCameraPos - this.rotationAnchor;
+					}
+
+					if(this.lerpVector == null)
+                    {
+						Vector2 d = this.mouseAnchor - new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+						this.desiredCameraAngles.y = -d.x * this.rotationSpeed;
+						this.desiredCameraAngles.x = -d.y * this.rotationSpeed;
+
+
+						Vector3 cross = currentCameraRot * Vector3.left;
+						Quaternion pitch = Quaternion.AngleAxis(this.desiredCameraAngles.x, cross);
+						Quaternion yaw = Quaternion.Euler(0f, this.desiredCameraAngles.y, 0f);
+
+						Vector3 newOffset = yaw * this.initialOffset; // FUCK PITCH FUCK PITCH FUCK PITCH
+
+						this.desiredCameraPosition = newOffset + this.rotationAnchor;
+						this.desiredCameraRotation = Quaternion.LookRotation(-newOffset);
+					}
+					
+					
+
+
+					
+				}
+
+				float s = Input.mouseScrollDelta.y;
+				if (s != 0)
+				{
+					Quaternion r = s > 0 && !Input.GetMouseButton(1) ? Quaternion.LookRotation(cursorPos - context.cameraInfo.previousCameraState.position) : this.desiredCameraRotation;
+					this.desiredCameraPosition += (r * Vector3.forward) * s * this.scrollSpeed;
+				}
+				
+				
 			}
 
-			float s = Input.mouseScrollDelta.y;
-			if (s != 0)
-			{
-				this.desiredCameraPosition += (this.desiredCameraRotation * Vector3.forward) * s * this.scrollSpeed;
-			}
-
-
-
+			this.lerpTimer -= Time.fixedDeltaTime;
+			if (this.lerpTimer < 0f)
+				this.lerpVector = null;		
+			if(this.lerpVector != null)
+            {
+				this.desiredCameraPosition = Vector3.Lerp((Vector3)this.lerpVector, this.desiredCameraPosition, this.lerpTimer / this.lerpDuration);
+            }
 
 
 			result.cameraState.position = this.desiredCameraPosition;

@@ -29,7 +29,32 @@ namespace RORAutochess.UI
 		static AllyHealthBarViewer()
         {
             RoR2.CharacterBody.onBodyStartGlobal += CharacterBody_onBodyStartGlobal;
-        }
+
+			GlobalEventManager.onClientDamageNotified += delegate (DamageDealtMessage msg) // kinda lazy
+			{
+				if (!(Run.instance is AutochessRun))
+					return;
+
+				if (!msg.victim || msg.isSilent)
+				{
+					return;
+				}
+				HealthComponent component = msg.victim.GetComponent<HealthComponent>();
+				if (!component || component.dontShowHealthbar)
+				{
+					return;
+				}
+				TeamIndex objectTeam = TeamComponent.GetObjectTeam(component.gameObject);
+				foreach (CombatHealthBarViewer combatHealthBarViewer in CombatHealthBarViewer.instancesList)
+				{
+					if (msg.attacker != combatHealthBarViewer.viewerBodyObject && combatHealthBarViewer.viewerBodyObject)
+					{
+						combatHealthBarViewer.HandleDamage(component, objectTeam);
+					}
+				}
+			};
+
+		}
 
         private static void CharacterBody_onBodyStartGlobal(CharacterBody body)
         {

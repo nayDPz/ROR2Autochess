@@ -29,6 +29,11 @@ namespace RORAutochess.Units
 
         }
 
+        private void FixedUpdate()
+        {
+
+        }
+
         public TileNavigator navigator;
         public CharacterMaster master;
         public GameObject bodyObject;

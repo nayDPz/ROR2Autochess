@@ -36,6 +36,14 @@ namespace RORAutochess.AI
             
         }
 
+        private void FixedUpdate()
+        {
+            foreach(RoR2.CharacterAI.BaseAI ai in this.master.aiComponents)
+            {
+                if (ai) ai.enabled = this.currentBoard.inCombat;
+            }
+        }
+
         public void SetCurrentTile(ChessBoard.Tile tile) 
         {
             this.currentTile = tile;

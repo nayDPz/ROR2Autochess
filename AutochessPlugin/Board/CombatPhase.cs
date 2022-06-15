@@ -16,6 +16,8 @@ namespace RORAutochess.Board
 
             foreach (ChessBoard board in this.roundController.boards)
             {
+                if (board.onCombatPhase != null)
+                    board.onCombatPhase.Invoke();
                 board.SetCombat(true); 
             }
         }
@@ -23,14 +25,15 @@ namespace RORAutochess.Board
         public override void FixedUpdate()
         {
             base.FixedUpdate();
-            if (base.fixedAge >= this.roundController.combatDuration)
+            
+            foreach (ChessBoard board in this.roundController.boards)
             {
-                foreach (ChessBoard board in this.roundController.boards)
-                {
-                    board.SetCombat(false);
-                }
-                this.outer.SetNextState(new PostCombatPhase());
+                if (board.inCombat)
+                    return;
             }
+
+            this.outer.SetNextState(new PostCombatPhase());
+            
         }
 
         public override void OnExit()
