@@ -49,7 +49,7 @@ namespace RORAutochess.Units
             if(this.minionGroup == null) this.minionGroup = MinionOwnership.MinionGroup.FindGroup(activator.netId);
             if(this.minionGroup == null) return Interactability.Disabled;
             if (this.master.minionOwnership.group != this.minionGroup) return Interactability.Disabled;
-            if (this.tileNavigator && this.tileNavigator.inCombat) return Interactability.ConditionsNotMet;
+            if (this.tileNavigator && this.tileNavigator.currentBoard.inCombat) return Interactability.ConditionsNotMet;
 
             return this.cooldown <= 0 ? Interactability.Available : Interactability.Disabled;
         }

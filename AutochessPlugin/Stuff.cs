@@ -17,6 +17,7 @@ namespace RORAutochess
 		public static GameObject playerBodyPrefab;
 
 		// Vanilla stuff
+		public static InteractableSpawnCard teleporterSpawnCard;
 		public static GameObject chatBoxPrefab;
         public static GameObject buffIcon;
         public static Material uiCooldownMat;
@@ -25,13 +26,19 @@ namespace RORAutochess
 		public static TimerStringFormatter timerTextThing;
         public static void LoadStuff()
         {
-            
-			// SHOULD DO SHADER SWAP EVENTUALLY
 
-            buffIcon = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/BuffIcon.prefab").WaitForCompletion();
+			// SHOULD JUST DO SHADER SWAP EVENTUALLY
+			
+			buffIcon = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/BuffIcon.prefab").WaitForCompletion();
             uiFlashMat = Addressables.LoadAssetAsync<Material>("RoR2/Base/UI/matUIPaintStreakFlash.mat").WaitForCompletion();
             uiCooldownMat = Addressables.LoadAssetAsync<Material>("RoR2/Base/UI/matUISkillCD.mat").WaitForCompletion();
             transparentBlueMat = Addressables.LoadAssetAsync<Material>("RoR2/Base/Common/matEditorTemporary.mat").WaitForCompletion();
+
+
+			teleporterSpawnCard = Addressables.LoadAssetAsync<InteractableSpawnCard>("RoR2/Base/Teleporters/iscTeleporter.asset").WaitForCompletion();
+			chatBoxPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/ChatBox, In Run.prefab").WaitForCompletion();
+			timerTextThing = Addressables.LoadAssetAsync<TimerStringFormatter>("RoR2/Base/Common/tsfRunStopwatch.asset").WaitForCompletion();
+
 
 			podShopPrefab = AutochessPlugin.assetbundle.LoadAsset<GameObject>("PodShop");
 			podShopPrefab.transform.Find("PodShopSlot").Find("FlashPanel").GetComponent<Image>().material = Stuff.uiFlashMat;
@@ -61,8 +68,7 @@ namespace RORAutochess
 			playerBodyPrefab = AutochessPlugin.assetbundle.LoadAsset<GameObject>("AutochessPlayerBody");
 			ContentPacks.bodyPrefabs.Add(playerBodyPrefab);
 
-			chatBoxPrefab = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<GameObject>("RoR2/Base/UI/ChatBox, In Run.prefab").WaitForCompletion();
-			timerTextThing = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<TimerStringFormatter>("RoR2/Base/Common/tsfRunStopwatch.asset").WaitForCompletion();
+			
 		}
     }
 }

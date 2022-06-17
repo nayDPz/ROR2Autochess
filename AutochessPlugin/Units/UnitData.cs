@@ -8,7 +8,7 @@ using RORAutochess.AI;
 
 namespace RORAutochess.Units
 {
-    public class UnitData : MonoBehaviour
+    public class UnitDatazzz : MonoBehaviour // this has become pretty worthless, should remove
     {
         public string unitName = "Unit";
         public float cost = 25;

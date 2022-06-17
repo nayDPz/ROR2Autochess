@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 4221966378
+CRC: 3515517135
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 431939692c66f3d95d0d77e1eac5149e
+    Hash: 6bff97bc56385b67861ffff891ed9874
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 3d368869efac8012c2b16d5165290074
+    Hash: 44f0ad9532c712c44902d48a30553cc6
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -47,8 +47,6 @@ ClassTypes:
   Script: {fileID: 733712478, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
 - Class: 114
   Script: {fileID: 637974714, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
-- Class: 114
-  Script: {fileID: 1297580292, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
 - Class: 114
@@ -92,7 +90,11 @@ ClassTypes:
 - Class: 114
   Script: {fileID: -226763392, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
 - Class: 114
+  Script: {fileID: 653292689, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
+- Class: 114
   Script: {fileID: 527445169, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
+- Class: 114
+  Script: {fileID: -1720486850, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
 - Class: 114
   Script: {fileID: -2086124775, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
 - Class: 114
@@ -172,6 +174,8 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 1638520407, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
 - Class: 114
+  Script: {fileID: 818754807, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
+- Class: 114
   Script: {fileID: -56772195, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
 - Class: 114
   Script: {fileID: 402010724, guid: 951ce57ad9993c1f840a4dceb5f8b763, type: 3}
@@ -231,6 +235,8 @@ ClassTypes:
   Script: {fileID: -667331979, guid: 67dfb1fdfb2b3072a2eda8e23ac8b724, type: 3}
 - Class: 114
   Script: {fileID: -851610622, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
+- Class: 114
+  Script: {fileID: 1364407045, guid: 374e650b51e4634499021a56ed9151d0, type: 3}
 - Class: 115
   Script: {instanceID: 0}
 - Class: 213
@@ -245,18 +251,20 @@ ClassTypes:
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
+- Assets/Director/acrTeleporter.prefab
 - Assets/Stuff/ShopEntry.prefab
-- Assets/OldStuff/Grid.prefab
+- Assets/Stuff/Grid.prefab
 - Assets/Stuff/HUDAutochess.prefab
 - Assets/OldStuff/Bench.prefab
 - Assets/Stuff/PodSpawnPoint.prefab
-- Assets/OldStuff/Hexagon2.prefab
+- Assets/Stuff/Hexagon2.prefab
 - Assets/Stuff/ChessHealthbar.prefab
 - Assets/Stuff/ShopSlot.prefab
-- Assets/Stuff/RoundController.prefab
+- Assets/Director/RoundController.prefab
 - Assets/Stuff/HUDAutochessOld.prefab
-- Assets/OldStuff/Hexagon3.prefab
+- Assets/Stuff/Hexagon3.prefab
+- Assets/Director/acrBasic.prefab
 - Assets/Stuff/PodShop.prefab
 - Assets/AutochessPlayerBody.prefab
-- Assets/OldStuff/Hexagon1.prefab
+- Assets/Stuff/Hexagon1.prefab
 Dependencies: []

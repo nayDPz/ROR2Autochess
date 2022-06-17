@@ -6,7 +6,7 @@ using EntityStates;
 
 namespace RORAutochess.Board
 {
-    public class RoundBaseState : BaseState
+    public class RoundBaseState : BaseState // STATES ARE OBSOLETE
     {
         public RoundController roundController;
 
@@ -14,7 +14,6 @@ namespace RORAutochess.Board
         {
             base.OnEnter();
             this.roundController = base.GetComponent<RoundController>();
-            this.roundController.currentPhaseTime = 0f;
             Chat.AddMessage(this.GetType().Name);
         }
 

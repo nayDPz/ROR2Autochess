@@ -9,17 +9,17 @@ namespace RORAutochess.Board
         public override void OnEnter() // create matchups and send units to enemy boards
         {
             base.OnEnter();
-            this.roundController.currentPhaseDuration = this.roundController.preCombatDuration;
+
             foreach (ChessBoard board in this.roundController.boards)
             {
-                board.CreateEnemyTeam(board.CreatePVERound()); // for testing
+                 // for testing
             }
         }
 
         public override void FixedUpdate()
         {
             base.FixedUpdate();
-            if (base.fixedAge >= this.roundController.preCombatDuration)
+            if (true)
             {
                 this.outer.SetNextState(new CombatPhase());
             }

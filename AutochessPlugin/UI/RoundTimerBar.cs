@@ -23,8 +23,8 @@ namespace RORAutochess.UI
 			if (RoundController.instance)
 			{
 				
-				max = RoundController.instance.currentPhaseDuration;
-				x = max - RoundController.instance.currentPhaseTime;
+				//max = RoundController.instance.currentPhaseDuration;
+				//x = max - RoundController.instance.currentPhaseTime;
 
 			}
 			if (this.fillRectTransform)

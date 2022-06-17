@@ -11,13 +11,12 @@ namespace RORAutochess.Board
         public override void OnEnter()
         {
             base.OnEnter();
-            this.roundController.currentPhaseDuration = this.roundController.postCombatDuration;
         }
 
         public override void FixedUpdate()
         {
             base.FixedUpdate();
-            if (base.fixedAge >= this.roundController.postCombatDuration)
+            if (true)
             {
                 foreach (ChessBoard board in this.roundController.boards)
                 {

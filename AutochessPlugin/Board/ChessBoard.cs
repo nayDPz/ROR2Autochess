@@ -29,29 +29,38 @@ namespace RORAutochess
         private static int boardWidth;
         private static int boardHeight;
 
+        public static Action<ChessBoard> onBoardReady;
+
         public GameObject gridInstance;
         public GameObject benchInstance;
 
         public static NodeGraph groundNodeGraph;
         public static NodeGraph airNodeGraph;
 
+        
+
         public Tile[] tiles;
 
         public static Transform cameraTransform;
 
         public CharacterMaster owner;
-        public List<UnitData> ownerUnitsOnBoard = new List<UnitData>();
-        public List<CharacterMaster> enemiesOnBoard = new List<CharacterMaster>();
+        public List<CharacterMaster> ownerUnitsOnBoard = new List<CharacterMaster>(); // this whole list stuff needs to get redone its fucked
         private CharacterMaster enemy;
 
 
-        public bool readyForCombat;
+        public bool ReadyForCombat // what
+        {
+            get => readyForCombat;
+            set => readyForCombat = value;
+        }
+
+        private bool readyForCombat;
         public bool inCombat;
 
         public Action onPrepPhase;
         public Action onCombatPhase;
 
-
+        public static NodeGraph.Node teleporterNode; // idk why its static this is fucked
         public static int teleporterNodeIndex = 127;
 
         // this whole thing is set up horribly. needs to be redone for multiplayer
@@ -103,6 +112,8 @@ namespace RORAutochess
                     if (obj2[i].gameObject != info.gameObject)
                         GameObject.Destroy(obj2[i].gameObject);
                 }
+
+                
 
 
                 CreateBoard();
@@ -179,7 +190,9 @@ namespace RORAutochess
         private void Start()
         {
             Stage.onStageStartGlobal += Stage_onStageStartGlobal;
-            
+
+            Board.RoundController.instance.CreateRound(); ////////// GIGA L 
+
         }
 
         private enum CombatStatus
@@ -189,22 +202,37 @@ namespace RORAutochess
             PlayerWin,
             EnemyWin
         }
+
+        public void ReadyUp()
+        {
+            
+
+            this.readyForCombat = true;
+
+            if (ChessBoard.onBoardReady != null)
+                ChessBoard.onBoardReady.Invoke(this);
+        }
         private CombatStatus GetCombatStatus()
         {
             bool allEnemiesDead = true;
             bool allAlliesDead = true;
             CombatStatus s = CombatStatus.InCombat;
-            foreach(CharacterMaster m in this.enemiesOnBoard)
+
+            using (IEnumerator<TeamComponent> enumerator = TeamComponent.GetTeamMembers(TeamIndex.Monster).GetEnumerator())
             {
-                if(m && !m.IsDeadAndOutOfLivesServer())
+                while (enumerator.MoveNext())
                 {
-                    allEnemiesDead = false;
-                    break;
+                    if (enumerator.Current.body.healthComponent.alive)
+                    {
+                        allEnemiesDead = false;
+                        break;
+                    }
                 }
             }
-            foreach(UnitData u in this.ownerUnitsOnBoard)
+
+            foreach (CharacterMaster u in this.ownerUnitsOnBoard) // bad. check for summons
             {
-                if(u && u.master && !u.master.IsDeadAndOutOfLivesServer())
+                if(u && !u.IsDeadAndOutOfLivesServer())
                 {
                     allAlliesDead = false;
                     break;
@@ -221,23 +249,29 @@ namespace RORAutochess
 
         private void FixedUpdate()
         {
-            if(this.inCombat)
-            {
-                CombatStatus s = this.GetCombatStatus();
-                if(s > CombatStatus.InCombat)
-                {
-                    this.SetCombat(false);
-                }
-            }
+            //CombatStatus s = this.GetCombatStatus(); // should get rid of inCombat bool and use events
+
+            if(this.owner.GetBodyObject()) // FOR SHOWCASE VIDEO FIX LATER ???????????????????????????????????????
+                this.owner.GetBodyObject().transform.Find("PlayerPositionIndicator(Clone)").gameObject.SetActive(false); 
         }
 
+        // should really just make my own stages at this point
         private void Stage_onStageStartGlobal(Stage obj)
         {
-
-            CombatDirector[] obj2 = GameObject.FindObjectsOfType<CombatDirector>(); // make own director
+            // this shit cant be here
+            CombatDirector[] obj2 = GameObject.FindObjectsOfType<CombatDirector>(); // FUCKING crigne
             for (int i = 0; i < obj2.Length; i++)
             {
-                GameObject.Destroy(obj2[i]);
+                if (!obj2[i].GetComponent<Board.AutochessRound>())
+                    GameObject.Destroy(obj2[i]);
+            }
+
+            SceneDirector[] sd = GameObject.FindObjectsOfType<SceneDirector>();
+            Board.RoundController.instance.stageCredits = sd[0].interactableCredit; /////// ??????????????????
+            foreach (SceneDirector s in sd)
+            {
+                if(!s.gameObject.GetComponent<Board.AutochessRound>()) // LLLL
+                    GameObject.Destroy(s);
             }
 
             ReadOnlyCollection<NetworkUser> readOnlyInstancesList = NetworkUser.readOnlyInstancesList;
@@ -270,8 +304,8 @@ namespace RORAutochess
                 player.gameObject.AddComponent<Interactor>();
             if (!player.gameObject.GetComponent<UI.MouseInteractionDriver2>())
                 player.gameObject.AddComponent<UI.MouseInteractionDriver2>();
-            if (!player.gameObject.GetComponent<Traits.UnitOwnership>())
-                player.gameObject.AddComponent<Traits.UnitOwnership>();
+            if (!player.gameObject.GetComponent<Units.UnitOwnership>())
+                player.gameObject.AddComponent<Units.UnitOwnership>();
 
             
 
@@ -279,18 +313,20 @@ namespace RORAutochess
             DeployUnit(master.GetComponent<CharacterMaster>(), tile);
 
             this.owner.bodyPrefab = Stuff.playerBodyPrefab;
-            this.owner.Respawn(Vector3.zero, Quaternion.identity);
+            CharacterBody b = this.owner.Respawn(ChessBoard.teleporterNode.position, Quaternion.identity);
+            
         }
 
         public void CreatePodShop(Tile tile) // should redo this completely
         {
             if(this.owner) // bad bad bad
             {
-                GameObject pod = GameObject.Instantiate(Stuff.podSpawnPointPrefab, tile.worldPosition + Vector3.up * 2, Quaternion.identity);
+                
 
                 UI.AutochessHUDAddon h = UI.AutochessHUDAddon.FindByMaster(this.owner);
                 if(h)
                 {
+                    GameObject pod = GameObject.Instantiate(Stuff.podSpawnPointPrefab, tile.worldPosition + Vector3.up * 2, Quaternion.identity);
                     GameObject hud = h.gameObject;
                     UICamera uicamera = hud.GetComponent<Canvas>().rootCanvas.worldCamera.GetComponent<UICamera>();
 
@@ -319,12 +355,9 @@ namespace RORAutochess
 
         public void SetupUnit(CharacterMaster m)
         {
-            Units.UnitData unitData = m.gameObject.AddComponent<Units.UnitData>();
+            //Units.UnitData unitData = m.gameObject.AddComponent<Units.UnitData>();
             GameObject bodyObject = m.GetBodyObject();
             CharacterBody body = bodyObject.GetComponent<CharacterBody>();
-            unitData.master = m;
-            unitData.bodyObject = m.bodyPrefab;
-            unitData.unitName = body.baseNameToken;
             m.gameObject.AddComponent<AI.TileNavigator>();
             EntityStateMachine mac = m.GetComponent<EntityStateMachine>();
             if (mac)
@@ -429,21 +462,18 @@ namespace RORAutochess
 
 
 
-        public void SetUnitPositions()
+        public void SetUnitPositions() // kinda pointless ..?
         {
-            this.ownerUnitsOnBoard = new List<UnitData>();
-
             MinionOwnership.MinionGroup unitGroup = MinionOwnership.MinionGroup.FindGroup(this.owner.netId);
             foreach(MinionOwnership o in unitGroup.members)
             {
                 if(o)
                 {
-                    UnitData data = o.gameObject.GetComponent<UnitData>();
-                    if(data && data.navigator) // shouldnt null check, game will break anyways
+                    TileNavigator nav = o.gameObject.GetComponent<TileNavigator>();
+                    if(nav) 
                     {
-                        data.navigator.inCombat = false;
-                        data.tileIndex = data.navigator.currentTile.index;
-                        this.ownerUnitsOnBoard.Add(data);
+
+                        this.ownerUnitsOnBoard.Add(nav.master);
                         
                     }
                     
@@ -453,7 +483,7 @@ namespace RORAutochess
         }
 
         public static int testPveRoundEnemies = 5;
-        public List<CharacterMaster> CreatePVERound() // giga testing. could do director stuff here?
+        public List<CharacterMaster> CreatePVERound() // scrap this
         {
             var enemyUnits = new List<CharacterMaster>(); 
             var masters = new GameObject[testPveRoundEnemies];
@@ -479,53 +509,60 @@ namespace RORAutochess
 
 
         }
-        public void ResetBoard()
+        public void ResetBoard() // need to clear interactables
         {
+
+            this.SetCombat(false);
 
             for (int i = 0; i < tiles.Length; i++)
             {
                 tiles[i].occupant = null;
             }
 
-            foreach (CharacterMaster unit in this.enemiesOnBoard)
+            using (IEnumerator<TeamComponent> enumerator = TeamComponent.GetTeamMembers(TeamIndex.Monster).GetEnumerator())
             {
-                if(unit)
-                    unit.TrueKill(); // FOR TESTING
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.Current.body.healthComponent.alive)
+                    {
+                        enumerator.Current.body.master.TrueKill();
+                    }
+                }
             }
-            this.enemiesOnBoard.Clear();
-            foreach(UnitData unit in this.ownerUnitsOnBoard)
+
+            foreach(CharacterMaster master in this.ownerUnitsOnBoard)
             {
-                unit.navigator.inCombat = false;
-                RespawnUnitHome(unit);
+                TileNavigator nav = master.GetComponent<TileNavigator>();
+                if(nav)
+                {
+                    nav.inCombat = false;
+                    RespawnUnitHome(nav);
+                }
+                
             }
-            this.ownerUnitsOnBoard.Clear();
+
             this.readyForCombat = false;
         }
 
-        private void RespawnUnitHome(UnitData unit)
+        private void RespawnUnitHome(TileNavigator unit)
         {
-            Vector3 location = this.tiles[unit.tileIndex].worldPosition;
+            Vector3 location = unit.currentTile.worldPosition;
 
             CharacterMaster master = unit.master;
 
             SetupBody(master.Respawn(location, Quaternion.identity).gameObject);
-
-            AI.TileNavigator t = master.GetComponent<AI.TileNavigator>();
-            t.currentBoard = this;
-            t.SetCurrentTile(this.tiles[unit.tileIndex]);
         }
 
-        public void CreateEnemyTeam(List<CharacterMaster> enemyUnits)
+        public void CreateEnemyTeam(List<CharacterMaster> enemyUnits) // scrap this too
         {
-            this.enemiesOnBoard = new List<CharacterMaster>();
+
             foreach (CharacterMaster master in enemyUnits)
             {
                 int i = UnityEngine.Random.RandomRangeInt(0, (this.tiles.Length / 2) - 1);
                 int k = (this.tiles.Length - 1) - i;
                 Vector3 location = this.tiles[k].worldPosition;
                 master.Respawn(location, Quaternion.identity);
-
-                this.enemiesOnBoard.Add(master);
+                master.teamIndex = TeamIndex.Monster;
             }
 
 
@@ -533,36 +570,31 @@ namespace RORAutochess
 
         public void SetCombat(bool b)
         {
-            this.inCombat = b;
-
-            foreach (UnitData unit in this.ownerUnitsOnBoard)
+            if(this.inCombat != b)
             {
-                unit.navigator.inCombat = b;
-                if(unit.master)
-                {
-                    unit.master.teamIndex = TeamIndex.Player;
+                this.inCombat = b;
+                Chat.AddMessage(this.inCombat.ToString());
 
-                    RoR2.CharacterAI.BaseAI ai = unit.master.GetComponent<RoR2.CharacterAI.BaseAI>();
-                    if(ai)
+                foreach (CharacterMaster master in this.ownerUnitsOnBoard)
+                {
+                    TileNavigator nav = master.GetComponent<TileNavigator>();
+                    if(nav)
                     {
-                        ai.enabled = b;
+                        nav.inCombat = b;                     
+                    }
+                    if (master)
+                    {
+                        master.teamIndex = TeamIndex.Player;
+
+                        RoR2.CharacterAI.BaseAI[] ais = master.aiComponents;
+                        foreach(RoR2.CharacterAI.BaseAI ai in ais)
+                        {
+                            ai.enabled = b;
+                        }
                     }
                 }
-                
             }
-            foreach (CharacterMaster unit in this.enemiesOnBoard) ///
-            {
-                if(unit)
-                {
-                    unit.teamIndex = TeamIndex.Monster;
-
-                    RoR2.CharacterAI.BaseAI ai = unit.GetComponent<RoR2.CharacterAI.BaseAI>();
-                    if (ai)
-                    {
-                        ai.enabled = b;
-                    }
-                }                           
-            }
+            
 
         }
 
@@ -590,7 +622,11 @@ namespace RORAutochess
 
                     if(index == ChessBoard.teleporterNodeIndex) ////////////////// CALCULATE INDEX FOR THESE board size might change
                     {
+                        ChessBoard.teleporterNode = nodes[index];
                         nodes[index].flags = NodeFlags.TeleporterOK;
+                        nodes[index].flags |= NodeFlags.NoCharacterSpawn;
+                        nodes[index].flags |= NodeFlags.NoShrineSpawn;
+                        nodes[index].flags |= NodeFlags.NoChestSpawn;
                     }
                     if(index <= (nodes.Length / 2) - 1) 
                     {
@@ -707,24 +743,7 @@ namespace RORAutochess
         }
 
 
-        /*
-        private Tile[] GenerateBenchTiles(float scale, Vector3 startPos)
-        {
-            Tile[] tiles = new Tile[9];
-
-
-            for (int i = 0; i < tiles.Length; i++)
-            {
-                tiles[i] = new Tile
-                {
-                    worldPosition = new Vector3(i * 1.05f * scale * 3f , 0, 0) + (benchPos * scale) + startPos, // OH MY GOD SCALE IS SO FUCKED AHHHHHHHH WHY IS IT 3
-                    index = i,
-                    board = this,
-                };
-            }
-            return tiles;
-        }
-        */
+        //a ,lot of tile stuff is useless now
         private Tile[] GenerateTiles(int x, int y, float gap, float scale, Vector3 startPos) // can be static if i decide all boards are same size
         {
 

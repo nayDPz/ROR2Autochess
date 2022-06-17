@@ -34,7 +34,7 @@ namespace RORAutochess.UI
         private void OnClicked() 
         {
             base.gameObject.SetActive(false);
-            board.readyForCombat = true;
+            board.ReadyUp();
         }
     }
 }

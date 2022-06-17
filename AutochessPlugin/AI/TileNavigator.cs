@@ -52,14 +52,11 @@ namespace RORAutochess.AI
         
         public void Pickup()
         {
-            if (!this.master || !this.body)
-                return;
-
             if(this.currentTile != null)
             {
                 this.currentTile.occupant = null;
-            }
-               
+                this.currentTile = null;
+            }             
         }
         private void OnDestroy()
         {

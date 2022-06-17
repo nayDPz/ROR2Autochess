@@ -17,10 +17,6 @@ namespace RORAutochess
         public static GameObject ui;
         public static void CreatePrefab()
         {
-
-            // gamemodePrefab = R2API.PrefabAPI.InstantiateClone(UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<GameObject>("RoR2/Base/ClassicRun/ClassicRun.prefab").WaitForCompletion(), "AutochessRun");
-
-
             GameObject clone = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<GameObject>("RoR2/Base/ClassicRun/ClassicRun.prefab").WaitForCompletion();
             Run cr = clone.GetComponent<Run>();
 

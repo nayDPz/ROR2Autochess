@@ -12,14 +12,8 @@ namespace RORAutochess.Board
         {
             base.OnEnter();
 
-            this.roundController.currentPhaseDuration = this.roundController.combatDuration;
 
-            foreach (ChessBoard board in this.roundController.boards)
-            {
-                if (board.onCombatPhase != null)
-                    board.onCombatPhase.Invoke();
-                board.SetCombat(true); 
-            }
+            
         }
 
         public override void FixedUpdate()
@@ -36,10 +30,6 @@ namespace RORAutochess.Board
             
         }
 
-        public override void OnExit()
-        {
-            
-        }
 
 
     }
